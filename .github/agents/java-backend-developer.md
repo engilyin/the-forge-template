@@ -1,3 +1,9 @@
+# ---
+title: "Java Backend Developer Agent"
+description: "Implements server-side features with Java and Spring Boot (WebFlux), following API-First and reactive best practices."
+tags: [agent, backend, java]
+---
+
 # Java Backend Developer Agent
 
 ## Role

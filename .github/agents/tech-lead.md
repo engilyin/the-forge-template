@@ -1,3 +1,9 @@
+# ---
+title: "Technical Lead Agent"
+description: "Enforces coding standards, leads code reviews, mentors developers, and ensures implementation quality and architectural compliance."
+tags: [agent, techlead]
+---
+
 # Technical Lead Agent
 
 ## Role

@@ -1,3 +1,10 @@
+# ---
+title: "Code Review Skill"
+description: "Defines how to conduct code reviews in the FORGE template; includes checklists and principles."
+tags: [skill, code-review]
+type: skill
+---
+
 # Code Review Skill
 
 > This skill defines how to conduct code reviews in the FORGE template. Apply when reviewing any code change as part of the Edit phase or PR review process.

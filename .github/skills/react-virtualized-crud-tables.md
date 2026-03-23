@@ -1,3 +1,10 @@
+# ---
+title: "React Virtualized CRUD Tables Skill"
+description: "Patterns for building virtualized, bounded-memory CRUD table engines with toolbar orchestration and page caching."
+tags: [skill, frontend, tables]
+type: skill
+---
+
 # React Virtualized CRUD Tables Skill
 
 Use this skill for React web features that render very large datasets through virtualized, infinitely scrolling CRUD tables. Apply it together with `.github/skills/react-web-frontend.md` when a feature needs a reusable table engine, bounded-memory paging, row actions, or rich toolbar-to-table orchestration.

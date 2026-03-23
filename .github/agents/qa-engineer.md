@@ -1,3 +1,9 @@
+# ---
+title: "QA Engineer Agent"
+description: "Defines and executes test strategies, writes automated tests, and enforces quality gates across the CI/CD pipeline."
+tags: [agent, qa, testing]
+---
+
 # QA Engineer Agent
 
 ## Role

@@ -1,5 +1,14 @@
 # AWS ECS Fargate Runtime and Deployments
 
+# ---
+# title: "AWS ECS/Fargate Runtime Deployments Skill"
+# description: "Deployment and runtime patterns for AWS ECS/Fargate, image delivery, task definitions, and ALB integration."
+# tags: [skill, aws, ecs, fargate]
+# type: skill
+# ---
+
+# AWS ECS Fargate Runtime and Deployments
+
 Use this skill for AWS runtime and deployment work after the base infrastructure already exists. Apply it when the task is about ECS/Fargate services, task definitions, ALB integration, service discovery, image publishing, Jenkins runtime agents, or rollout safety.
 
 Use `.github/skills/aws-terraform-jenkins-infrastructure.md` for stack boundaries and provisioning design.

@@ -1,3 +1,10 @@
+# ---
+title: "API-First Design Skill"
+description: "Design and author OpenAPI-first REST API contracts before implementation; use for spec-first workflows and generation."
+tags: [skill, api-first]
+type: skill
+---
+
 # API-First Design Skill
 
 > Apply this skill when designing, authoring, reviewing, or generating any REST API specification for a backend project. API-First means the OpenAPI specification is written **before** any implementation code is produced.

@@ -1,3 +1,10 @@
+# ---
+title: "Refactoring Skill"
+description: "Guidelines and patterns for safe refactoring, including rules of when and how to refactor with tests."
+tags: [skill, refactor]
+type: skill
+---
+
 # Refactoring Skill
 
 > Apply this skill during the Edit phase or when technical debt needs to be addressed. Refactoring improves the internal structure of code without changing its external behavior.

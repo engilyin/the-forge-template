@@ -1,3 +1,10 @@
+# ---
+title: "OpenSpec Authoring Skill"
+description: "Guidance for writing and reviewing OpenSpec-format specification documents in the repository."
+tags: [skill, spec, openspec]
+type: skill
+---
+
 # OpenSpec Authoring Skill
 
 > Apply this skill when writing or reviewing any specification document in this repository. All specs must follow the OpenSpec format defined in `.github/instructions/openspec-format.md`.

@@ -1,3 +1,9 @@
+# ---
+title: "Mobile Developer Agent"
+description: "Builds cross-platform mobile apps using Expo and React Native; prioritizes performance, accessibility, and shared logic with web."
+tags: [agent, mobile]
+---
+
 # Mobile Developer Agent
 
 ## Role

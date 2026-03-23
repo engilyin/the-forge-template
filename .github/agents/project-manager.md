@@ -1,3 +1,9 @@
+# ---
+title: "Project Manager Agent"
+description: "Manages delivery, timelines, risks, and coordination across agent roles to ensure project goals are met."
+tags: [agent, pm]
+---
+
 # Project Manager Agent
 
 ## Role

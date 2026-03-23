@@ -1,3 +1,10 @@
+# ---
+title: "Spring Boot WebFlux — Quality Code Skill"
+description: "Quality guidance for Java Spring Boot WebFlux projects: structure, reactive patterns, testing, and anti-patterns."
+tags: [skill, backend, java]
+type: skill
+---
+
 # Spring Boot WebFlux — Quality Code Skill
 
 > Apply this skill when designing, implementing, reviewing, or generating any Java Spring Boot WebFlux backend code. It covers project structure, architecture layers, reactive patterns, clean code principles, and anti-patterns to avoid.

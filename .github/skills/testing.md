@@ -1,3 +1,10 @@
+# ---
+title: "Testing Skill"
+description: "Testing strategies and patterns for unit, integration, E2E, performance, and security testing."
+tags: [skill, testing]
+type: skill
+---
+
 # Testing Skill
 
 > Comprehensive testing strategy and patterns for the FORGE technology stack. Apply when writing or reviewing tests at any layer.

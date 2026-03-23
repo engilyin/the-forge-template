@@ -1,3 +1,10 @@
+# ---
+title: "React Web Frontend Quality Skill"
+description: "Quality guidance for React + TypeScript web apps: routing, state, testing, and UI architecture."
+tags: [skill, frontend, react]
+type: skill
+---
+
 # React Web Frontend Quality Skill
 
 Use this skill for React web applications built with TypeScript and Vite. It is the primary quality reference for React-based websites and internal web apps in FORGE projects.

@@ -1,3 +1,10 @@
+# ---
+title: "AWS Terraform + Jenkins Infrastructure Skill"
+description: "Guidance for Terraform provisioning, stack boundaries, remote state, and Jenkins pipeline integration on AWS."
+tags: [skill, aws, terraform, jenkins]
+type: skill
+---
+
 # AWS Terraform Jenkins Infrastructure Skill
 
 Use this skill for AWS infrastructure work that is provisioned with Terraform and deployed through Jenkins pipelines. It is the primary quality reference for maintaining and designing stack-based AWS infrastructure in FORGE projects that use one Terraform stack per directory and a Jenkins approval flow for `plan` and `apply`.

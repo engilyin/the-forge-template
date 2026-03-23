@@ -1,3 +1,9 @@
+# ---
+title: "Solution Architect Agent"
+description: "Designs end-to-end system architecture, writes ADRs, and defines integration and API-first patterns to meet business goals."
+tags: [agent, architect]
+---
+
 # Solution Architect Agent
 
 ## Role

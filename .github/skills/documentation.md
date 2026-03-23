@@ -1,3 +1,10 @@
+# ---
+title: "Documentation Skill"
+description: "Standards and practices for writing and maintaining project documentation within the repository."
+tags: [skill, docs]
+type: skill
+---
+
 # Documentation Skill
 
 > Apply this skill when generating, reviewing, or maintaining project documentation. Good documentation is part of the Definition of Done.

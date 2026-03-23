@@ -1,3 +1,10 @@
+# ---
+title: "Expo React Native Mobile Quality Skill"
+description: "Quality standards and architecture for Expo-managed React Native mobile apps; use for mobile feature work."
+tags: [skill, mobile, expo]
+type: skill
+---
+
 # Expo React Native Mobile Quality Skill
 
 Use this skill for cross-platform mobile apps built with Expo and React Native. It is the primary quality reference for Android/iOS client code in FORGE projects.
