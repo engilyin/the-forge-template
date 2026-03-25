@@ -79,6 +79,23 @@ solution/             ← Your project code lives here (greenfield output or bro
 
 ---
 
+## Repository & worktree rules
+
+To avoid accidental edits in the scaffold repository and ensure a clean separation between specification and implementation, follow these rules strictly:
+
+- All implementation work MUST be done inside the nested `solution/` repository. The root repo is a scaffolding/spec repository and should only contain specs, prompts, agents, and instructions. Do NOT add or modify source code under the root repo.
+- Create branches and git worktrees inside `solution/`. Example: from `solution/` run `git worktree add -b feature/xyz ../worktrees/solution-feature-xyz main`.
+- The backlog and story definitions live in `spec/iterations/...` in the root repo. Use those files as the authoritative source of truth for which stories to implement and their acceptance criteria.
+- Before starting a story, scan `solution/` for any existing or partially implemented code for that story. If code exists, update or extend it — do not re-implement functionality that already exists.
+- Parallelism rule: only run stories in parallel when they belong to the same story-group (i.e., the middle segment is identical). For example, `US-01-01`, `US-01-02` may run in parallel (same `01` group). Do NOT parallelize stories across different groups. When in doubt, complete stories with smaller last-segment numbers first (e.g., finish `US-01-01` before `US-02-01`).
+- Dependency rule: check `dependencies` in the story front-matter and `todo_deps` in the session DB before dispatching agents. Do not start a story that depends on unfinished work.
+- When creating or updating branches, prefer small, reviewable commits and open a PR in the nested `solution/` repo for code changes. The root repo PRs should be limited to spec/iteration/backlog changes only.
+- If an accidental change to the root repo is required (rare), ask for explicit confirmation before committing.
+
+These rules will be enforced by agents when running iterations. Update this section if your team workflow differs.
+
+---
+
 ## FORGE Phase Prompts
 
 Run these in order for a new project:
