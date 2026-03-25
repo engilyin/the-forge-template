@@ -94,6 +94,21 @@ To avoid accidental edits in the scaffold repository and ensure a clean separati
 
 These rules will be enforced by agents when running iterations. Update this section if your team workflow differs.
 
+## Tooling & search guidance
+
+- The `solution` directory is a nested Git repository / worktree. Search and file tools do not automatically traverse nested worktrees — always operate explicitly inside `solution/` when inspecting or modifying implementation code.
+- Preferred file discovery commands (use these when in doubt):
+  - git -C solution ls-files '<pattern>'  # preferred for tracked files
+  - PowerShell: Get-ChildItem -Path .\solution -Recurse -Filter *.java
+  - For targeted patterns use explicit Windows-style paths: e.g. solution\src\main\java\**\*.java
+- The glob tool in this environment may not match files inside nested worktrees. If a glob returns no matches, verify with `git -C solution ls-files` or PowerShell Get-ChildItem.
+- Always use Windows-style paths (backslashes) on this host. Avoid forward-slash paths which may not work correctly.
+- When creating worktrees or branches for implementation, run commands inside the nested repo: git -C solution worktree add -b feature/xyz ../worktrees/solution-feature-xyz main
+- Automation and agents MUST perform a pre-check: confirm Test-Path .\solution and `git -C solution rev-parse --is-inside-work-tree` before assuming files are present.
+- Update CI/task scripts to prefer `git -C solution` and explicit path patterns so tools are deterministic across nested repo boundaries.
+
+These guidelines reduce mistakes when tools or agents search for sources and will be enforced by agents and CI checks.
+
 ---
 
 ## FORGE Phase Prompts
