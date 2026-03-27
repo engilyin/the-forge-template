@@ -142,6 +142,48 @@ These rules will be enforced by agents when running iterations. Update this sect
 
 These guidelines reduce mistakes when tools or agents search for sources and will be enforced by agents and CI checks.
 
+## Copilot CLI — Platform notes (Windows vs macOS / Linux)
+
+- **Windows (PowerShell)**:
+  - Ensure PowerShell execution policy allows running scripts when installing or invoking the CLI: `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force`.
+  - Environment variables (temporary): `$env:NAME='value'`. To persist env vars use `setx NAME "value"`.
+  - Path and quoting: prefer double-quotes for paths with spaces. Many tools accept forward slashes (`/`) — prefer them for cross-platform compatibility.
+  - If repository scripts assume POSIX tools (bash, sh), prefer running Copilot CLI from **Git Bash** or **WSL** to avoid subtle differences.
+
+- **macOS / Linux (bash, zsh)**:
+  - Export variables with `export NAME=value`.
+  - Make local scripts executable when needed: `chmod +x ./script.sh`.
+  - Shell quoting rules differ from PowerShell: use single quotes to prevent expansion, double quotes to allow it.
+
+- **Cross-platform tips**:
+  - Always run the Copilot CLI from the workspace root so relative paths and multi-repo worktrees resolve correctly.
+  - When sharing examples in prompts or scripts, use forward slashes in paths and avoid shell-specific syntax unless you document it.
+  - For nested git repositories and worktrees, prefer `git -C <repo> <command>` to avoid cwd confusion across shells.
+  - If you want consistent Unix-like behavior on Windows, use WSL or Git Bash rather than PowerShell for automation scripts.
+
+## Copilot CLI Autopilot / "Dark Factory" tips
+
+- **Design prompts and specs first**: put high-level requirements, constraints, and acceptance criteria in `spec/` (OpenSpec/.prompt.md). Autopilot works best when it has a clear spec to follow.
+
+- **Prefer many small, explicit tasks**: break large work into focused prompts (one intent per prompt). This reduces ambiguity and makes autopilot decisions predictable.
+
+- **Use agent personas and skills**: include the intended agent/skill in the prompt (see `.github/agents/` and `.agents/skills/`) so agents follow expected conventions and patterns.
+
+- **Dry-run / review-first**: run Autopilot in preview/no-commit or review mode (if available) to inspect suggested changes before automatic commits or pushes. Always validate large changes manually first.
+
+- **Worktree strategy**: create git worktrees per project/feature and point Autopilot at the worktree directories. This keeps cross-project changes isolated and safely reversible.
+
+- **Constrain iterations and side-effects**: set clear iteration limits and explicit branching/commit rules in the prompt (branch naming, commit message templates, whether to open a PR, etc.).
+
+- **Monitor and intervene on ambiguity**: Autopilot excels at routine, well-scoped work. For design choices, ambiguous tradeoffs, or security-sensitive code, pause autopilot and request human review.
+
+- **Safety checklist to include in prompts**:
+  - No hard-coded secrets (always mention secrets management).
+  - Tests and linters must pass locally before commits are made.
+  - Generate small, reviewable commits (one logical change per commit).
+
+These additions are intended as pragmatic, platform-aware guidance for running Copilot CLI and using Autopilot effectively with the FORGE template.
+
 ---
 
 ## FORGE Phase Prompts

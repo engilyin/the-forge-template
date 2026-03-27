@@ -1,260 +1,269 @@
 # Copilot CLI Runbook
 
-## 1. Start the CLI
+> Quick-reference for day-to-day usage. Autonomous-first, manual as fallback.
+> Detailed workflow guides: [autonomous](docs/workflow-autonomous.md) · [controlled](docs/workflow-controlled.md) · [review](docs/workflow-review.md)
+
+---
+
+## 1. Bootstrap
 
 ```bash
-copilot login
-copilot --version
-copilot
+copilot login && copilot --version
+copilot                          # start interactive session
 ```
 
-## 2. Set the default model
-
-Use `GPT-5 Mini` for normal work.
+Load workspace context and skills:
 
 ```text
-/model GPT-5 Mini
-```
-
-Use a premium model only for:
-
-- greenfield framing
-- brownfield analysis
-- large architecture analysis
-- explicit user request
-
-After analysis, switch back:
-
-```text
-/model GPT-5 Mini
-```
-
-## 3. Load repo context
-
-```text
-Read @.github/instructions/copilot-instructions.md and follow it for this repository.
+Read @.github/copilot-instructions.md and follow it for this repository.
 /skills reload
 /skills list
-/agent
+```
 
-### 3.a Clone projects for Brownfield
+Set the default (cheap) model — switch to premium only for framing, analysis, or architecture:
 
-If you are using Brownfield mode you must clone the existing project repositories into the workspace `solutions/` directory. Example workflow:
+```text
+/model GPT-5 Mini
+```
+
+---
+
+## 2. Managing Projects in `solutions/`
+
+All product repositories live under `solutions/`. The scaffold repo itself never contains implementation code.
+
+### Add a product project
 
 ```bash
 cd solutions
 git clone https://github.com/your-org/acme-api
-git clone https://github.com/your-org/acme-web
-git clone https://github.com/your-org/acme-mobile
 cd ..
 ```
 
-To add a new project incrementally later:
+After cloning, reload context:
+
+```text
+/skills reload
+```
+
+### Add a reference / sample project (temporary)
+
+Clone any repo you want to study for patterns or ideas. Prefix the folder name with `_ref-` so agents know to ignore it during implementation:
 
 ```bash
 cd solutions
-git clone https://github.com/your-org/acme-iac
+git clone https://github.com/other-org/cool-project _ref-cool-project
 cd ..
 ```
 
-After cloning, return to the workspace root and run:
+When done extracting ideas, remove it:
 
 ```bash
-copilot  # start or refresh CLI context
-/skills reload
-```
+rm -rf solutions/_ref-cool-project    # bash / Git Bash
+# PowerShell:
+Remove-Item -Recurse -Force solutions\_ref-cool-project
 ```
 
-## 4. Greenfield flow
+### Remove a product project
+
+```bash
+# clean up worktrees first
+git -C solutions/acme-old worktree list
+git -C solutions/acme-old worktree prune
+rm -rf solutions/worktrees/acme-old
+rm -rf solutions/acme-old
+```
+
+Update any story specs that reference the removed project.
+
+---
+
+## 3. Autonomous (Dark Factory) Flow — Primary
+
+This is the default way to work. Let agents handle implementation end-to-end.
+
+### 3a. Kick-off (greenfield or brownfield)
+
+**Greenfield** — switch to a premium model, then:
 
 ```text
-Read @.github/prompts/project/greenfield-init.prompt.md and run that flow with me. Ask clarifying questions first.
+Read @.github/prompts/project/greenfield-init.prompt.md and run that flow. Ask clarifying questions first.
 ```
 
-Then continue phase by phase:
+Continue through FORGE phases: `01-frame` → `02-obstruct` → `03-reconstruct`.
+
+**Brownfield** — clone projects into `solutions/`, then:
 
 ```text
-Read @.github/prompts/forge/01-frame.prompt.md and continue from the current repo state.
-Read @.github/prompts/forge/02-obstruct.prompt.md and continue from the current repo state.
-Read @.github/prompts/forge/03-reconstruct.prompt.md and continue from the current repo state.
+Read @.github/prompts/project/brownfield-analysis.prompt.md and analyze all projects under @solutions.
 ```
 
-Switch back to `GPT-5 Mini` before implementation.
+Switch back to `GPT-5 Mini` after analysis.
+
+### 3b. Build the backlog
 
 ```text
-/model GPT-5 Mini
 Read @.github/prompts/backlog/story-breakdown.prompt.md and break the approved specs into stories.
-Read @.github/prompts/backlog/backlog-grooming.prompt.md and groom the current backlog.
-Read @.github/prompts/backlog/iteration-planning.prompt.md and create the next iteration plan.
+Read @.github/prompts/backlog/backlog-grooming.prompt.md and groom the backlog.
+Read @.github/prompts/backlog/iteration-planning.prompt.md and plan the next iteration.
 ```
 
-## 5. Brownfield flow
-
-Clone existing project repositories into `solutions/`, then run:
+### 3c. Fleet — execute the iteration
 
 ```text
-Read @.github/prompts/project/brownfield-analysis.prompt.md and analyze all projects under @solutions. Produce technical specs under @spec/technical.
+Read @spec/iterations/iteration-1/plan.md and summarize the plan.
 ```
 
-After the analysis is done, switch back to `GPT-5 Mini` and continue with backlog and implementation work.
-
-## 6. Single-story implementation flow
-
-```text
-/model GPT-5 Mini
-Read @spec/iterations/iteration-1/stories/STORY-001.md and implement it following @.github/instructions/copilot-instructions.md. The story's projects field lists which repos under @solutions to modify.
-```
-
-If needed, pick a role first:
-
-```text
-/agent
-```
-
-## Reviewing generated documents and requesting changes
-
-Copilot can generate specification and implementation artifacts, but reviewing in VS Code is often more convenient. Recommended review workflow:
-
-1. Generate artifacts with Copilot CLI as usual.
-2. Open the workspace in VS Code and review the files under `spec/` and `solutions/`.
-
-```bash
-code .
-```
-
-3. Provide feedback using one of these approaches (choose what's most convenient):
-
-- Make edits directly in VS Code and commit them to a review branch (preferred):
-
-	```bash
-	git checkout -b review/spec-changes
-	# edit files in VS Code
-	git add spec/
-	git commit -m "docs: review updates for generated specs"
-	git push origin review/spec-changes
-	# open a GitHub PR for formal review
-	```
-
-- Or leave structured feedback next to the generated docs by creating a `spec/FEEDBACK.md` entry listing requested changes. Agents will read and act on that file.
-
-- Or open issues in the repo for large or blocking changes (use `gh` or the GitHub UI):
-
-	```bash
-	gh issue create --title "Spec feedback: ..." --body "Details and file references"
-	```
-
-4. If you prefer to discuss iteratively with Copilot before committing changes, run targeted prompts such as:
-
-```text
-Read spec/technical/api-contracts.yaml and propose the top 3 clarifying questions.
-```
-
-Agents will respond and can generate diffs or patch files you can apply locally.
-
-Note: For traceability prefer the commit/PR route so human reviewers and CI can validate changes.
-
-## 7. Dark Factory /fleet flow
-
-Use this after the iteration plan is approved.
-
-```text
-/model GPT-5 Mini
-Read @spec/iterations/iteration-1/plan.md and summarize the implementation plan.
-```
-
-If you want plan mode first, press `Shift+Tab` and refine the plan.
-
-Then run:
+Then launch the fleet:
 
 ```text
 /fleet implement the approved iteration plan using the relevant custom agents, keep status documents updated, and stop on blocking issues.
 ```
 
-Track work:
+Monitor:
 
 ```text
 /tasks
 /usage
 ```
 
-Assess the result:
+### 3d. Assess
 
 ```text
 Read @.github/prompts/dark-factory/assess-iteration.prompt.md and assess the completed iteration.
 ```
 
-## 8. Useful session commands
+---
+
+## 4. Controlled (Manual) Flow — Fallback
+
+Use when you need fine-grained control over a single story or tricky change.
 
 ```text
-/help
-/session
-/agent
-/skills list
-/skills reload
-/model
-/usage
-/tasks
+/agent                            # pick the right persona
+/model GPT-5 Mini
+Read @spec/iterations/iteration-1/stories/STORY-001.md and implement it following @.github/copilot-instructions.md.
+```
 
-## Git committer identity (recommended)
+Press `Shift+Tab` before confirming to review the plan.
 
-To ensure commits created during Copilot runs attribute to your chosen automation or service account (and not to any other user), set a repository-local Git identity in each project before letting agents commit. Example:
+---
+
+## 5. Agile Day-to-Day Work
+
+### Add a new requirement
+
+Write a short spec or user story in `spec/business/` or open a GitHub issue, then:
+
+```text
+Read @spec/business/new-requirement.md and add it to the backlog. Groom and prioritize.
+```
+
+### Register a bug
+
+Create a bug report in `spec/iterations/iteration-N/bugs/` or via GitHub:
 
 ```bash
-# set a repo-local git identity for each project
+gh issue create --title "BUG: ..." --body "Steps to reproduce, expected vs actual"
+```
+
+Then let the agent triage:
+
+```text
+Read the latest bugs under @spec/iterations and add fix stories to the backlog.
+```
+
+### Re-prioritize and re-plan
+
+```text
+Read @.github/prompts/backlog/backlog-grooming.prompt.md and re-groom. New requirements and bugs have been added.
+Read @.github/prompts/backlog/iteration-planning.prompt.md and re-plan the current iteration.
+```
+
+---
+
+## 6. Review (VS Code in Parallel)
+
+Keep VS Code open alongside the CLI for reviewing generated artifacts.
+
+```bash
+code .    # open the scaffold workspace
+```
+
+**Quick review cycle:**
+
+1. CLI generates code / specs.
+2. In VS Code: review diffs, run tests, read generated docs.
+3. Provide feedback via:
+   - Edit files directly → commit to a review branch.
+   - Create `spec/FEEDBACK.md` — agents read and act on it.
+   - Open a GitHub issue for large changes.
+
+See [workflow-review.md](docs/workflow-review.md) for the full review process.
+
+---
+
+## 7. Git Identity & Commits
+
+Set repo-local identity so agent commits are attributable:
+
+```bash
 for proj in solutions/*/; do
-  git -C "$proj" config user.name "Your Automation Bot"
-  git -C "$proj" config user.email "bot+solution@example.com"
+  git -C "$proj" config user.name "Your Name"
+  git -C "$proj" config user.email "you@example.com"
 done
-
-# confirm for a specific project
-git -C solutions/acme-api config user.name && git -C solutions/acme-api config user.email
 ```
 
-Guidelines:
-- Use an account/email you control for auditability.
-- Avoid names or emails containing "copilot" unless that is your intended committer identity.
-- For GitHub actions or CI, prefer a machine/service user and document its keys/permissions securely.
+PowerShell equivalent:
 
-## How to verify stage completion
+```powershell
+Get-ChildItem solutions -Directory | ForEach-Object {
+  git -C $_.FullName config user.name "Your Name"
+  git -C $_.FullName config user.email "you@example.com"
+}
+```
 
-Use a small checklist to confirm a FORGE phase is complete. Agents produce artifacts in predictable locations — use these checks:
+---
 
-- Frame complete: `spec/business/frame.md` exists and has the actor registry and goals.
-- Obstruct complete: `spec/business/obstruct-report.md` exists with identified risks and mitigation notes.
-- Reconstruct complete: `spec/technical/api-contracts.yaml` and `spec/technical/architecture.md` exist and are reviewed.
-- Generate complete: `solutions/` contains the implemented code for agreed stories and `spec/iterations/iteration-N/report.md` documents outputs.
-- Edit complete: PRs merged, CI passing, and `spec/iterations/iteration-N/acceptance.md` contains signed QA validation.
+## 8. Verify Stage Completion
 
-Quick commands to help verify:
+| Phase | Check |
+|-------|-------|
+| Frame | `spec/business/frame.md` exists with goals and actors |
+| Obstruct | `spec/business/obstruct-report.md` has risks and mitigations |
+| Reconstruct | `spec/technical/architecture.md` + `api-contracts.yaml` reviewed |
+| Generate | Code in `solutions/`, iteration report written |
+| Edit | PRs merged, CI green, acceptance doc signed |
 
 ```bash
-# list expected spec files
-ls spec/business spec/technical || true
-
-# list all projects
+ls spec/business spec/technical
 ls solutions/
-
-# check for recent commits in a project
-git -C solutions/acme-api log --oneline -n 10
-
-# view open PRs (requires gh CLI)
-gh pr list --repo ORG/REPO --state open
-
-# Copilot task list
+git -C solutions/acme-api log --oneline -5
 /tasks
 ```
 
-For automation, agents can also write a `spec/stage-manifest.yaml` that records timestamps and agent names for each completed phase — consider adding this as a lightweight project convention.
-```
+---
 
-## 9. Simple non-interactive usage
-
-```bash
-copilot -s -p "Read @.github/instructions/copilot-instructions.md and summarize the next FORGE step for this repo."
-```
-
-Use `--agent` when you want a specific custom agent:
+## 9. Non-Interactive / CI Usage
 
 ```bash
-copilot -s --agent devops-engineer -p "Review @solutions/acme-iac and suggest the next safe deployment change."
+copilot -s -p "Read @.github/copilot-instructions.md and summarize the next FORGE step."
+copilot -s --agent devops-engineer -p "Review @solutions/acme-iac and suggest safe deployment changes."
 ```
+
+---
+
+## 10. Quick Reference
+
+| Command | Purpose |
+|---------|---------|
+| `/model` | Switch model |
+| `/agent` | Pick agent persona |
+| `/skills list` | Show loaded skills |
+| `/skills reload` | Reload after project changes |
+| `/fleet` | Launch autonomous fleet |
+| `/tasks` | Track fleet progress |
+| `/usage` | Check token/cost usage |
+| `/session` | Session info |
+| `/help` | All commands |
+| `Shift+Tab` | Plan mode before execution |
