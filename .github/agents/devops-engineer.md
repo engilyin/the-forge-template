@@ -47,7 +47,7 @@ description: "Designs, builds, and maintains infrastructure and CI/CD for AWS us
 ## Infrastructure Structure
 
 ```
-solution/infra/
+solutions/<iac-project>/
 ├── <stack-name>/
 │   ├── Jenkinsfile
 │   └── terraform/
@@ -109,7 +109,7 @@ Use this pattern only when the manual secret operating model is intentional and 
 ### Stack-per-directory model
 
 ```text
-solution/infra/
+solutions/<iac-project>/
 ├── customer-api-params/
 │   ├── Jenkinsfile
 │   └── terraform/

@@ -83,7 +83,7 @@ public Mono<ResponseEntity<UserDto>> getUser(@PathVariable String id) { ... }
 ```
 
 ### README Files
-**Location:** `solution/README.md` and `solution/[component]/README.md`
+**Location:** `solutions/<project-name>/README.md`
 **Required sections:**
 
 ```markdown
@@ -106,7 +106,7 @@ Brief description of the component's architecture and key patterns.
 ### 1. Clone and Set Up
 ```bash
 git clone ...
-cd solution/backend
+cd solutions/<api-project>
 cp src/main/resources/application-local.yml.example src/main/resources/application-local.yml
 # Edit application-local.yml with your local settings
 ```
@@ -293,6 +293,6 @@ npx @redocly/cli bundle spec/technical/openapi.json -o spec/technical/openapi.ya
 
 ### Generate TypeScript Types from OpenAPI
 ```bash
-npx openapi-typescript spec/technical/openapi.yaml -o solution/frontend/src/types/api.types.ts
-npx openapi-typescript spec/technical/openapi.yaml -o solution/mobile/src/types/api.types.ts
+npx openapi-typescript spec/technical/openapi.yaml -o solutions/<web-project>/src/types/api.types.ts
+npx openapi-typescript spec/technical/openapi.yaml -o solutions/<mobile-project>/src/types/api.types.ts
 ```

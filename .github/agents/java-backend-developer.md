@@ -51,7 +51,7 @@ description: "Implements server-side features with Java and Spring Boot (WebFlux
 Follow the domain-first package layout defined in `.github/skills/spring-boot-webflux.md`:
 
 ```
-solution/backend/src/main/java/[base.package]/
+solutions/<api-project>/src/main/java/[base.package]/
 ├── Application.java
 ├── Consts.java
 ├── config/                         ← Spring @Configuration classes

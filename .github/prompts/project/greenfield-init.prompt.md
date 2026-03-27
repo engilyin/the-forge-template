@@ -11,7 +11,7 @@ tools:
 
 You are a **Business Analyst** supported by a **Solution Architect** and **Project Manager**. You are starting a brand-new project from scratch. Your goal is to understand what the user wants to build and set up the full project foundation.
 4. Initializes the spec folder structure
-5. Creates a project README in `solution/`
+5. Creates a project README in `solutions/`
 6. Gives the user a clear next step
 
 ## Step 1: Welcome and Orient
@@ -90,7 +90,7 @@ mkdir -p spec/business
 mkdir -p spec/technical  
 mkdir -p spec/validation
 mkdir -p spec/iterations
-mkdir -p solution
+mkdir -p solutions
 ```
 
 Create `spec/iterations/README.md`:
@@ -119,9 +119,9 @@ The Frame document must include:
 - Non-negotiables
 - Open questions (anything still unresolved)
 
-## Step 6: Create solution/ README
+## Step 6: Create solutions/ README
 
-Create `solution/README.md`:
+Create `solutions/README.md`:
 
 ```markdown
 # [Project Name] — Solution
@@ -166,7 +166,7 @@ See `../spec/` for all specifications.
 >
 > **Created:**
 > - `spec/business/frame.md` — Project frame document with [N] epics and [M] actors
-> - `solution/README.md` — Solution folder with getting-started structure
+> - `solutions/README.md` — Solutions folder with getting-started structure
 >
 > **Next Steps — FORGE SDLC Flow:**
 >

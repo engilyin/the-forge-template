@@ -72,7 +72,7 @@ Copilot will ask:
 Run: `.github/prompts/project/brownfield-analysis.prompt.md`
 
 Copilot will:
-- Scan `solution/` directory structure
+- Scan `solutions/` directory for all project repositories
 - Identify technology stack, frameworks, patterns in use
 - Map existing architecture components
 - Identify test coverage baseline
@@ -275,7 +275,7 @@ Run: `.github/prompts/dark-factory/run-iteration.prompt.md`
 ### Per-Story Development Workflow
 1. Agent reads story spec from `spec/iterations/iteration-N/stories/STORY-XXX.md`
 2. Agent creates branch: `feature/STORY-XXX-short-description`
-3. Agent implements code in `solution/`
+3. Agent implements code in the relevant project under `solutions/`
 4. Agent writes unit tests
 5. Agent runs local test suite
 6. Agent commits with conventional commit message
@@ -283,7 +283,7 @@ Run: `.github/prompts/dark-factory/run-iteration.prompt.md`
 8. Agent updates `spec/iterations/iteration-N/status.md`
 
 ### Artifacts Produced
-- Source code in `solution/` (feature branches)
+- Source code in `solutions/<project-name>/` (feature branches)
 - Unit tests alongside implementation code
 - Updated CI/CD pipeline if required
 - Terraform changes if infrastructure modified

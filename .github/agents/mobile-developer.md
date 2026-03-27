@@ -56,7 +56,7 @@ description: "Builds cross-platform mobile apps using Expo and React Native; pri
 ## Project Structure
 
 ```
-solution/mobile/
+solutions/<mobile-project>/
 ├── app/                          ← Expo Router file-based routes
 │   ├── (auth)/                   ← Auth group (unauthenticated routes)
 │   │   ├── _layout.tsx           ← Auth stack navigator

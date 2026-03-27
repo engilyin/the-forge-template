@@ -36,7 +36,7 @@ FORGE is a five-phase AI-assisted SDLC methodology:
 | **Frame** | Interview stakeholders. Define vision, goals, scope, actors. | `spec/business/frame.md` |
 | **Obstruct** | Stress-test the frame. Find risks, gaps, assumptions, unknowns. | `spec/business/obstruct-report.md` |
 | **Reconstruct** | Resolve obstructions. Design architecture. Write full specs. | Full `spec/business/` + `spec/technical/` |
-| **Generate** | Build code, tests, infrastructure. Story by story. | Code in `solution/` |
+| **Generate** | Build code, tests, infrastructure. Story by story. | Code in `solutions/` |
 | **Edit** | Review, validate, refactor, polish. Go/No-Go decision. | Validated release candidate |
 
 FORGE ensures AI agents are always working from precise, reviewed specifications — not improvising from vague prompts.
@@ -192,8 +192,8 @@ the-forge-template/
 │   ├── validation/            ← Test strategy and acceptance criteria
 │   └── iterations/            ← Per-iteration plans and reports
 │
-└── solution/                  ← Your project code lives here
-    └── .gitkeep               ← Empty; populated during Generate phase
+└── solutions/                 ← Project repositories live here (cloned or generated)
+    └── .gitkeep               ← Empty; populated during Brownfield clone or Generate phase
 ```
 
 ---
@@ -290,11 +290,12 @@ Simple CLI runbook: [`COPILOT-CLI-RUNBOOK.md`](COPILOT-CLI-RUNBOOK.md)
 
 **Bring an existing project into the FORGE workflow.**
 
-1. **Copy your existing code into `solution/`:**
+1. **Clone your existing project repositories into `solutions/`:**
    ```bash
-   cp -r /path/to/your/existing/project/* solution/
-   # or
-   git clone https://github.com/your-org/your-project solution/
+   cd solutions
+   git clone https://github.com/your-org/your-api
+   git clone https://github.com/your-org/your-web
+   cd ..
    ```
 
 2. **Run the Brownfield Analysis:**
@@ -336,7 +337,7 @@ Discovery → Specification → Backlog → Grooming → Iteration Planning → 
 | Backlog | `backlog/story-breakdown` | BA, SM | `spec/business/backlog.md` |
 | Grooming | `backlog/backlog-grooming` | SM, TL, BA | Estimated, Ready backlog |
 | Iteration Planning | `backlog/iteration-planning` | SM, PM, TL | Iteration plan + story specs |
-| Development | `forge/04-generate` or `dark-factory/run-iteration` | Dev agents | Code in `solution/` |
+| Development | `forge/04-generate` or `dark-factory/run-iteration` | Dev agents | Code in `solutions/` |
 | Review/QA | `forge/05-edit` | TL, QA | QA report, release candidate |
 | Release | (manual + DevOps agent) | DevOps, TL | Deployed release |
 

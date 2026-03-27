@@ -154,11 +154,11 @@ Use: .github/prompts/forge/03-reconstruct.prompt.md
 - In **interactive mode**, stories are worked one at a time with human review between each
 
 ### Output Artifacts
-- Source code in `solution/` (organized by component)
+- Source code in `solutions/<project-name>/` (organized by project)
 - Test suites for each component
-- Terraform stacks in `solution/infra/`
+- Terraform stacks in `solutions/<iac-project>/`
 - Deployment manifests or platform definitions when the project uses them
-- Jenkins pipeline definitions in `solution/ci/` or stack-local `Jenkinsfile`s
+- Jenkins pipeline definitions in `solutions/<iac-project>/` or stack-local `Jenkinsfile`s
 - Updated API documentation
 
 ### SDLC Mapping

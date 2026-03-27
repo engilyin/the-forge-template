@@ -45,7 +45,7 @@ Do not let screens become god objects. A screen should assemble hooks, render co
 ### Project structure
 
 ```text
-solution/mobile/
+solutions/<mobile-project>/
 ├── app/
 │   ├── _layout.tsx                 <- root providers, fonts, route shell
 │   ├── entry.ts                    <- startup side-effects only

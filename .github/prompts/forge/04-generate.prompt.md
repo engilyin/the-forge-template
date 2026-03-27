@@ -70,7 +70,7 @@ git checkout -b feature/[STORY-ID]-[kebab-case-title]
 
 **Project Structure:**
 ```
-solution/backend/
+solutions/<api-project>/
   src/main/java/[package]/
     domain/         ← Domain entities, value objects
     application/    ← Use cases, application services
@@ -111,7 +111,7 @@ solution/backend/
 
 **Project Structure:**
 ```
-solution/frontend/
+solutions/<web-project>/
   src/
     components/     ← Reusable UI, form, and table primitives
     features/       ← Lazy-loaded route modules by feature
@@ -153,7 +153,7 @@ solution/frontend/
 
 **Project Structure:**
 ```
-solution/mobile/
+solutions/<mobile-project>/
   app/            ← Expo Router file-based routing
     (tabs)/       ← Tab navigator screens
     (auth)/       ← Authentication screens
@@ -191,7 +191,7 @@ solution/mobile/
 
 **Project Structure:**
 ```
-solution/infra/
+solutions/<iac-project>/
   <stack-name>/
     Jenkinsfile
     terraform/

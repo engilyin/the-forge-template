@@ -37,25 +37,24 @@ Read @.github/instructions/copilot-instructions.md and follow it for this reposi
 /skills list
 /agent
 
-### 3.a Clone solution for Brownfield
+### 3.a Clone projects for Brownfield
 
-If you are using Brownfield mode you must place the existing project inside the workspace `solution/` directory. Example workflows:
-
-From an existing GitHub repository (recommended):
+If you are using Brownfield mode you must clone the existing project repositories into the workspace `solutions/` directory. Example workflow:
 
 ```bash
-# clone the upstream solution repo into the workspace `solution/` folder
-git clone --depth=1 https://github.com/ORG/REPO.git solution
-cd solution
-# optionally switch branch
-git checkout main
+cd solutions
+git clone https://github.com/your-org/acme-api
+git clone https://github.com/your-org/acme-web
+git clone https://github.com/your-org/acme-mobile
 cd ..
 ```
 
-From a local path (copy):
+To add a new project incrementally later:
 
 ```bash
-cp -R /path/to/local/project ./solution
+cd solutions
+git clone https://github.com/your-org/acme-iac
+cd ..
 ```
 
 After cloning, return to the workspace root and run:
@@ -91,10 +90,10 @@ Read @.github/prompts/backlog/iteration-planning.prompt.md and create the next i
 
 ## 5. Brownfield flow
 
-Put the existing code in `solution/`, then run:
+Clone existing project repositories into `solutions/`, then run:
 
 ```text
-Read @.github/prompts/project/brownfield-analysis.prompt.md and analyze @solution. Produce technical specs under @spec/technical.
+Read @.github/prompts/project/brownfield-analysis.prompt.md and analyze all projects under @solutions. Produce technical specs under @spec/technical.
 ```
 
 After the analysis is done, switch back to `GPT-5 Mini` and continue with backlog and implementation work.
@@ -103,7 +102,7 @@ After the analysis is done, switch back to `GPT-5 Mini` and continue with backlo
 
 ```text
 /model GPT-5 Mini
-Read @spec/iterations/iteration-1/stories/STORY-001.md and implement it in @solution following @.github/instructions/copilot-instructions.md.
+Read @spec/iterations/iteration-1/stories/STORY-001.md and implement it following @.github/instructions/copilot-instructions.md. The story's projects field lists which repos under @solutions to modify.
 ```
 
 If needed, pick a role first:
@@ -117,7 +116,7 @@ If needed, pick a role first:
 Copilot can generate specification and implementation artifacts, but reviewing in VS Code is often more convenient. Recommended review workflow:
 
 1. Generate artifacts with Copilot CLI as usual.
-2. Open the workspace in VS Code and review the files under `spec/` and `solution/`.
+2. Open the workspace in VS Code and review the files under `spec/` and `solutions/`.
 
 ```bash
 code .
@@ -130,7 +129,7 @@ code .
 	```bash
 	git checkout -b review/spec-changes
 	# edit files in VS Code
-	git add spec/ solution/
+	git add spec/
 	git commit -m "docs: review updates for generated specs"
 	git push origin review/spec-changes
 	# open a GitHub PR for formal review
@@ -198,15 +197,17 @@ Read @.github/prompts/dark-factory/assess-iteration.prompt.md and assess the com
 
 ## Git committer identity (recommended)
 
-To ensure commits created during Copilot runs attribute to your chosen automation or service account (and not to any other user), set a repository-local Git identity before letting agents commit. Example:
+To ensure commits created during Copilot runs attribute to your chosen automation or service account (and not to any other user), set a repository-local Git identity in each project before letting agents commit. Example:
 
 ```bash
-# set a repo-local git identity (overrides global settings for this repo only)
-git -C solution config user.name "Your Automation Bot"
-git -C solution config user.email "bot+solution@example.com"
+# set a repo-local git identity for each project
+for proj in solutions/*/; do
+  git -C "$proj" config user.name "Your Automation Bot"
+  git -C "$proj" config user.email "bot+solution@example.com"
+done
 
-# confirm
-git -C solution config user.name && git -C solution config user.email
+# confirm for a specific project
+git -C solutions/acme-api config user.name && git -C solutions/acme-api config user.email
 ```
 
 Guidelines:
@@ -221,7 +222,7 @@ Use a small checklist to confirm a FORGE phase is complete. Agents produce artif
 - Frame complete: `spec/business/frame.md` exists and has the actor registry and goals.
 - Obstruct complete: `spec/business/obstruct-report.md` exists with identified risks and mitigation notes.
 - Reconstruct complete: `spec/technical/api-contracts.yaml` and `spec/technical/architecture.md` exist and are reviewed.
-- Generate complete: `solution/` contains the implemented code for agreed stories and `spec/iterations/iteration-N/report.md` documents outputs.
+- Generate complete: `solutions/` contains the implemented code for agreed stories and `spec/iterations/iteration-N/report.md` documents outputs.
 - Edit complete: PRs merged, CI passing, and `spec/iterations/iteration-N/acceptance.md` contains signed QA validation.
 
 Quick commands to help verify:
@@ -230,8 +231,11 @@ Quick commands to help verify:
 # list expected spec files
 ls spec/business spec/technical || true
 
-# check for recent commits touching spec or solution
-git log --oneline --name-only -n 20 -- spec/ solution/ | sed -n '1,80p'
+# list all projects
+ls solutions/
+
+# check for recent commits in a project
+git -C solutions/acme-api log --oneline -n 10
 
 # view open PRs (requires gh CLI)
 gh pr list --repo ORG/REPO --state open
@@ -252,5 +256,5 @@ copilot -s -p "Read @.github/instructions/copilot-instructions.md and summarize 
 Use `--agent` when you want a specific custom agent:
 
 ```bash
-copilot -s --agent devops-engineer -p "Review @solution/infra and suggest the next safe deployment change."
+copilot -s --agent devops-engineer -p "Review @solutions/acme-iac and suggest the next safe deployment change."
 ```

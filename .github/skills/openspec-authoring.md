@@ -241,7 +241,7 @@ Acceptance Criterion (acceptance-criteria.md)
     ↓
 Test Case (in code or validation spec)
     ↓
-Implementation (in solution/)
+Implementation (in solutions/<project-name>/)
 ```
 
 When reviewing specs during the Edit phase, verify this chain exists for every delivered story.

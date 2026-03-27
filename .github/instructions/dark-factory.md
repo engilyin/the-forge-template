@@ -30,14 +30,18 @@ Dark Factory requires high-quality, unambiguous specifications. The factory can 
 The Dark Factory achieves throughput by running multiple agent instances simultaneously. Each agent works in an isolated **git worktree** — a separate working directory linked to the same repository but on its own branch.
 
 ```
-main repository
+scaffold repository
 ├── .git/
-├── solution/           ← main working tree
-└── worktrees/
-    ├── story-001/      ← worktree for STORY-001 (Backend Agent)
-    ├── story-002/      ← worktree for STORY-002 (Frontend Agent)
-    ├── story-003/      ← worktree for STORY-003 (Mobile Agent)
-    └── story-004/      ← worktree for STORY-004 (DevOps Agent)
+├── solutions/                  ← all project repositories
+│   ├── <project-a>/            ← e.g. acme-api/
+│   ├── <project-b>/            ← e.g. acme-web/
+│   └── worktrees/              ← git worktrees for isolated feature work
+│       ├── <project-a>/
+│       │   ├── story-001/      ← worktree for STORY-001 (Backend Agent)
+│       │   └── story-003/      ← worktree for STORY-003
+│       └── <project-b>/
+│           ├── story-002/      ← worktree for STORY-002 (Frontend Agent)
+│           └── story-004/      ← worktree for STORY-004 (Mobile Agent)
 ```
 
 Each worktree is on its own feature branch. Agents work in parallel without interfering with each other.

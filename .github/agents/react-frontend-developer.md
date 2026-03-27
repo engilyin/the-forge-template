@@ -52,7 +52,7 @@ description: "Builds responsive, accessible web UIs with React and TypeScript; f
 ## Project Structure
 
 ```
-solution/frontend/
+solutions/<web-project>/
 ├── src/
 │   ├── components/
 │   │   ├── ui/              ← shadcn/ui and shared UI primitives

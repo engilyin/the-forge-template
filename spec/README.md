@@ -1,6 +1,6 @@
 # Specification Folder — Structure & Guide
 
-This folder contains all project specifications in **OpenSpec format**. Specifications are the source of truth for what gets built — all code in `solution/` must trace back to a spec here.
+This folder contains all product specifications in **OpenSpec format**. Specifications are the source of truth for what gets built — all code in `solutions/` (across all project repositories) must trace back to a spec here.
 
 ---
 
@@ -111,7 +111,7 @@ draft ──► review ──► approved ──► implemented ──► deprec
 
 ## Traceability Chain
 
-Every deliverable in `solution/` must trace back through this chain:
+Every deliverable in `solutions/` must trace back through this chain:
 
 ```
 spec/business/frame.md (actor goals)
@@ -124,10 +124,12 @@ spec/validation/acceptance-criteria.md (acceptance criteria)
     ↓
 spec/iterations/iteration-N/stories/STORY-XXX.md (iteration story spec)
     ↓
-solution/ (implementation code + tests)
+solutions/<project-name>/ (implementation code + tests)
 ```
 
-If code exists in `solution/` with no corresponding spec entry, it was built without a spec — this is a process violation and should be addressed in the next iteration.
+Story specs include a `projects` field listing which repositories under `solutions/` are affected.
+
+If code exists in `solutions/` with no corresponding spec entry, it was built without a spec — this is a process violation and should be addressed in the next iteration.
 
 ---
 

@@ -106,19 +106,19 @@ Methods for validation:
 ### Step 4: Run All Quality Gates
 ```bash
 # Backend: full test suite
-cd solution/backend && ./mvnw verify
+cd solutions/<api-project> && ./mvnw verify
 
 # Frontend: full test + build
-cd solution/frontend && npm run test && npm run build
+cd solutions/<web-project> && npm run test && npm run build
 
 # Mobile: test + export check
-cd solution/mobile && npm run test
+cd solutions/<mobile-project> && npm run test
 
 # Infrastructure: validate + format check
-cd solution/infra/terraform && terraform validate && terraform fmt -check
+cd solutions/<iac-project>/<stack>/terraform && terraform validate && terraform fmt -check
 
 # Security: run OWASP dependency check (if configured)
-cd solution/backend && ./mvnw org.owasp:dependency-check-maven:check
+cd solutions/<api-project> && ./mvnw org.owasp:dependency-check-maven:check
 ```
 
 Document results for all gates.
@@ -143,7 +143,7 @@ For each refactoring:
 
 Check and complete documentation:
 - [ ] API documentation reflects all new/changed endpoints (OpenAPI/Swagger)
-- [ ] README in `solution/` is updated if project structure changed
+- [ ] README in each project under `solutions/` is updated if project structure changed
 - [ ] Architecture documentation is updated if new components were added
 - [ ] ADRs are written for any significant decisions made during implementation
 - [ ] Deployment documentation is updated for any infra changes
