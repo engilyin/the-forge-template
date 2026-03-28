@@ -546,6 +546,129 @@ When a new enum or type needs mapping across the controller boundary, **add a ne
 
 ---
 
+## Partial Update (PATCH) Pattern
+
+> **This is the canonical pattern for all `PATCH` endpoints in this codebase.** All PATCH operations must follow this convention — never deviate.
+
+### The rule: one PATCH endpoint per resource, never per field
+
+```
+✅ PATCH /portal/api/v2/entity/{entityId}         ← one endpoint, caller sends only changed fields
+❌ PATCH /portal/api/v2/entity/{entityId}/status  ← anti-pattern: targets a sub-field, not a resource
+❌ PATCH /portal/api/v2/entity/{entityId}/rate    ← anti-pattern: targets a sub-field, not a resource
+```
+
+Sub-path PATCH endpoints behave like PUT on a sub-resource. They force callers to make multiple round-trips to change several fields and they leak the internal field structure into the API contract. Use a single PATCH with optional fields instead.
+
+### When PATCH vs POST (action endpoint)
+
+| Use | When |
+|-----|------|
+| `PATCH /resources/{id}` | Updating stored fields (partial resource update, idempotent) |
+| `POST /resources/{id}/action` | Triggering an action with side effects beyond field changes (cancel, rotate, approve) |
+
+Examples:
+- `PATCH /jobs/{id}` with `{ownerId}` — reassign a owner (field update, idempotent)
+- `POST /jobs/{id}/cancel` — cancel a job (action: triggers state machine, sends notifications)
+
+### Null-safe MapStruct mapper (the implementation pattern)
+
+Use `@BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)` on the entity update method. MapStruct will call setters only for non-null fields — null = absent = no change.
+
+```java
+// Service-layer DAO mapper — for PATCH operations
+@Mapper(componentModel = "spring")
+public interface EntityPatchMapper {
+
+    // PATCH: null fields are IGNORED (entity field unchanged)
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    void updateEntity(PatchEntityRequest request, @MappingTarget Entity entity);
+}
+```
+
+### Service layer pattern
+
+```java
+@Service
+@RequiredArgsConstructor
+public class EntityUpdateService {
+
+    private final EntityRepository entityRepository;
+    private final EntityPatchMapper patchMapper;
+
+    public Mono<EntityView> patch(UUID entityId, PatchEntityRequest request) {
+        return entityRepository.findById(entityId)
+                .switchIfEmpty(Mono.error(new NotFoundException("Entity not found: " + entityId)))
+                .map(entity -> {
+                    patchMapper.updateEntity(request, entity);  // null-safe: only non-null fields applied
+                    return entity;
+                })
+                .flatMap(entityRepository::save)
+                .map(serviceMapper::toView);
+    }
+}
+```
+
+### Request record
+
+All fields **nullable** — a field absent from the JSON payload deserialises as `null`; the mapper skips it.
+
+```java
+// All fields optional — null = "don't change this field"
+public record PatchEntityRequest(
+    Boolean locked,
+    String comments,
+    BigDecimal jobRate,
+    String entityCallbackUrl
+) {}
+```
+
+### Special case: explicit null = clear to default
+
+Some fields have semantic meaning when explicitly set to `null` (e.g., `jobRate: null` clears the custom rate, falling back to the platform default). The standard `NullValuePropertyMappingStrategy.IGNORE` pattern cannot distinguish between absent (no-change) and explicit null (clear).
+
+**Recommended approach:** Accept that `null` JSON value = "clear to default" for these fields. Document this in the OpenAPI spec with a note in the field description: `"null clears this field to platform default"`. The mapper skips null fields, so handle the clear explicitly in the service:
+
+```java
+// In the service, after applying the patch mapper:
+if (request.jobRate() != null) {
+    entity.setJobRate(request.jobRate());
+} else if (requestBodyIncludesJobRateKey) {
+    entity.setJobRate(null); // explicit null = clear
+}
+// If jobRate key is absent entirely, entity.jobRate remains unchanged
+```
+
+**Simpler rule when the tradeoff is acceptable:** Treat `null` JSON as "clear" for nullable fields and document accordingly. This avoids complex Optional wrappers and is sufficient for most admin use cases where staff users explicitly choose values.
+
+### Controller pattern
+
+```java
+@Override
+public Mono<ResponseEntity<EntityResponse>> patchEntity(
+        ServerWebExchange exchange,
+        UUID entityId,
+        Mono<PatchEntityRequest> requestMono) {
+
+    return requestMono
+            .flatMap(request -> entityUpdateService.patch(entityId, request))
+            .map(apiMapper::toResponse)
+            .map(ResponseEntity::ok);
+}
+```
+
+### Anti-patterns
+
+```
+❌ Multiple PATCH endpoints per resource (one per field)
+❌ Using PUT instead of PATCH for partial updates
+❌ @BeanMapping without NullValuePropertyMappingStrategy.IGNORE (overwrites all fields with null)
+❌ Manually checking each field in the service (verbose, error-prone, doesn't scale)
+❌ Trusting the client to send the full object on a PATCH (that's PUT semantics)
+```
+
+---
+
 ## Java Records and Data Objects
 
 | Situation | Preferred type |

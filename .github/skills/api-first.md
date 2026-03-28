@@ -147,6 +147,64 @@ components:
 
 ---
 
+### 4a. PATCH Design Rules
+
+**One PATCH endpoint per resource — never per field:**
+
+```
+✅ PATCH /entities/{entityId}        ← caller sends only changed fields
+❌ PATCH /entities/{entityId}/status ← sub-path targeting a single field
+❌ PATCH /entities/{entityId}/rate   ← sub-path targeting a single field
+```
+
+**PATCH vs POST (action) decision:**
+
+| Operation type | HTTP method | Example |
+|----------------|-------------|---------|
+| Partial field update (idempotent, reversible) | `PATCH /resources/{id}` | Disable entity, update name |
+| Semantic action with side effects | `POST /resources/{id}/action` | Cancel operation, rotate secret, approve entity |
+
+Actions change system state in ways that go beyond simple field storage (state machines, notifications, external calls). Model those as `POST` on a sub-resource path, never as PATCH.
+
+**OpenAPI schema for PATCH requests — all fields optional:**
+
+```yaml
+components:
+  schemas:
+    PatchEntityRequest:
+      type: object
+      description: Partial update payload for an entity. Send only fields that should change.
+      properties:
+        locked:
+          type: boolean
+          nullable: true
+          description: "true = lock entity (deny access); false = unlock/approve. Absent = no change."
+        internalComments:
+          type: string
+          nullable: true
+          description: "Staff-only notes. Absent = no change; empty string = clear."
+        someRate:
+          type: number
+          format: decimal
+          nullable: true
+          description: "Custom billing rate. Absent = no change; explicit null = clear to platform default."
+        entityCallbackUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: "Webhook URL for event notifications. Absent = no change; empty = clear."
+      # No 'required' array — all fields are optional
+```
+
+**Key spec conventions for PATCH schemas:**
+- No `required` array — every field is optional
+- Use `nullable: true` (OAS 3.0) or `nullable: true` under the field schema to allow explicit `null`
+- Document the semantics of explicit `null` vs absent in the field `description`
+- Return the full updated resource in the response (not just the changed fields)
+- Response `200 OK` for successful PATCH (not `204` — always return the updated state)
+
+---
+
 ### 5. Pagination for List Endpoints
 
 Every `GET /entities` list operation should support:
