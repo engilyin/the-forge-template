@@ -49,8 +49,8 @@ If any prerequisite fails, stop and explain what is missing.
 git status
 git branch --show-current
 
-# Create worktrees directory if needed
-mkdir -p worktrees
+# Create solutions worktrees directory if needed (per-project worktrees)
+mkdir -p solutions/worktrees
 
 # Verify no stale worktrees from previous runs
 git worktree list

@@ -115,7 +115,17 @@ To avoid accidental edits in the scaffold repository and ensure a clean separati
   ```bash
   git -C solutions/acme-api worktree add ../worktrees/acme-api/feature-US-01-01-auth -b feature/US-01-01-auth main
   ```
-- **Cross-project stories**: A single user story can touch multiple projects. Create one worktree per affected project. The story spec's `projects` field lists which repos are involved.
+IMPORTANT: Do NOT create worktrees at the repository root or at top-level paths like `C:\code\myproduct\worktrees\...`. Implementation work MUST live under `solutions/worktrees/<project-name>/` so agents and CI can locate per-project codebases. If an agent or script accidentally created top-level worktrees, remove them and recreate correctly:
+  ```bash
+  # prune stale top-level entries
+  git worktree prune
+
+  # create the correct per-project worktree (example)
+  git -C solutions/<project> worktree add ../worktrees/<project>/feature/US-01-01-auth -b feature/US-01-01-auth main
+  ```
+
+  The Dark Factory automation and agents rely on this layout; scripts and prompts expect `solutions/worktrees/<project>/<branch>/`.
+  - **Cross-project stories**: A single user story can touch multiple projects. Create one worktree per affected project. The story spec's `projects` field lists which repos are involved.
 - The backlog and story definitions live in `spec/iterations/...` in the root repo. Use those files as the authoritative source of truth for which stories to implement and their acceptance criteria.
 - Before starting a story, scan ALL relevant project directories under `solutions/` for any existing or partially implemented code. If code exists, update or extend it — do not re-implement functionality that already exists.
 - Parallelism rule: only run stories in parallel when they belong to the same story-group (i.e., the middle segment is identical). For example, `US-01-01`, `US-01-02` may run in parallel (same `01` group). Do NOT parallelize stories across different groups. When in doubt, complete stories with smaller last-segment numbers first (e.g., finish `US-01-01` before `US-02-01`).
