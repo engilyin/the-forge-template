@@ -1,0 +1,52 @@
+{
+  "iteration": 0,
+  "goal": "ITERATION GOAL HERE",
+  "status": "planned",
+  "started_at": null,
+  "completed_at": null,
+  "current_phase": 0,
+  "stories": {
+    "US-XX-00": {
+      "title": "Phase 0 Foundation",
+      "phase": 0,
+      "agent": "java-backend-developer",
+      "project": "project-name",
+      "status": "queued",
+      "branch": null,
+      "worktree": null,
+      "gates": {
+        "build": null,
+        "test": null,
+        "lint": null,
+        "format": null
+      },
+      "pr_url": null,
+      "started_at": null,
+      "completed_at": null,
+      "retry_count": 0,
+      "error_summary": null
+    },
+    "US-XX-01": {
+      "title": "Story title",
+      "phase": 1,
+      "agent": "java-backend-developer",
+      "project": "project-name",
+      "status": "queued",
+      "branch": null,
+      "worktree": null,
+      "gates": {
+        "build": null,
+        "test": null,
+        "lint": null,
+        "format": null
+      },
+      "pr_url": null,
+      "started_at": null,
+      "completed_at": null,
+      "retry_count": 0,
+      "error_summary": null
+    }
+  },
+  "phase_transitions": [],
+  "amendments": []
+}
