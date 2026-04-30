@@ -110,7 +110,7 @@ SLUG="short-slug"
 PROJECT="project-name"
 
 git -C solutions/$PROJECT worktree add \
-  solutions/worktrees/$PROJECT/$STORY_ID \
+  ../worktrees/$PROJECT/$STORY_ID \
   -b feature/$STORY_ID-$SLUG main 2>&1
 ```
 

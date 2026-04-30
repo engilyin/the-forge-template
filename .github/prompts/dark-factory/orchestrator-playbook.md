@@ -91,8 +91,9 @@ For each phase (1, 2, 3, ...):
 
 ### 4a. Create Worktrees (no LLM needed)
 ```bash
+# IMPORTANT: git -C changes CWD, so use ../worktrees/ (NOT solutions/worktrees/)
 git -C solutions/PROJECT worktree add \
-  solutions/worktrees/PROJECT/US-XX-XX \
+  ../worktrees/PROJECT/US-XX-XX \
   -b feature/US-XX-XX-slug main
 ```
 
