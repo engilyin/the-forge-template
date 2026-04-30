@@ -42,6 +42,17 @@ eas build --platform android --profile development --local
 eas build --platform ios --profile development --local
 ```
 
+## Mandatory Development Workflow
+
+1. `yarn install` — ensure dependencies are installed
+2. Implement the story following `patterns.md` (`.github/skills/expo-react-native.md`)
+3. **Run the Mobile Review Checklist** (`review-checklist.md`) — fix ALL findings before proceeding *(checklist planned; skip step until file exists)*
+4. `npx tsc --noEmit` — must pass with zero type errors
+5. `npx eslint .` — must pass with zero errors
+6. `npx expo start --web` — verify the app starts without runtime errors (spot-check affected screens)
+7. Commit with `git commit` (author set by `.forge/init-worktree.sh`)
+8. Push and open PR with `gh pr create --base $FORGE_BASE_BRANCH`
+
 ## Agent
 
 `mobile-developer` — see `.github/agents/mobile-developer.md`

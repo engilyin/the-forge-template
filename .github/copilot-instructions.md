@@ -307,49 +307,24 @@ When operating in this workspace, Copilot **MUST**:
 3. **Respect specifications** — All generated code must trace back to a spec in `spec/`. Do not invent requirements.
 4. **Use OpenSpec format** — All specifications must follow the OpenSpec.dev format defined in `.github/instructions/openspec-format.md`.
 5. **API-First** — Before implementing any REST endpoint, the OpenAPI spec must exist and be agreed in `spec/technical/api-contracts.yaml`. Follow `.github/skills/api-first.md` for conventions.
-6. **Expo mobile work follows the mobile skill** — For Expo/React Native stories, follow `.github/skills/expo-react-native.md` for route structure, state, API communication, notifications, config, and anti-patterns.
-7. **React web work follows the web skill** — For React website and admin UI stories, follow `.github/skills/react-web-frontend.md` for feature routing, CRUD structure, API clients, forms, entity patterns, state, and anti-patterns.
-8. **Large React data grids follow the table skill** — For huge virtualized CRUD tables, also follow `.github/skills/react-virtualized-crud-tables.md` for bounded-memory paging, state-manager contracts, toolbar orchestration, and row-action update patterns.
-9. **AWS infrastructure work follows the AWS skills** — For Terraform + Jenkins infrastructure changes, follow `.github/skills/aws-terraform-jenkins-infrastructure.md` for stack boundaries, state handling, env files, parameter stacks, and AWS design rules, and follow `.github/skills/aws-ecs-fargate-runtime-deployments.md` for ECS/Fargate runtime, image delivery, ALB integration, and rollout rules.
-10. **Use low-cost models by default** — Default to `GPT-5 Mini` for routine execution work such as backlog grooming, iteration planning, generation, editing, tests, refactors, docs, and implementation. Use a premium model only for high-level analysis tasks such as greenfield framing, brownfield analysis, large architecture trade-off analysis, or when the user explicitly asks for it.
-11. **Agent fidelity** — When acting as an agent, stay in that role. Do not conflate responsibilities.
-12. **Document decisions** — Every significant decision (architectural, product, technical) must be recorded as an ADR or spec entry.
-13. **Small, reviewable commits** — Generate code in small, logically coherent units. Each story = one branch + one PR per project.
-14. **Git commit authorship — STRICT** — Before any commit, ensure you have run `.forge/init-worktree.sh` (or `setauthor.sh`) so the worktree has the correct `user.name` and `user.email` from `.forge/config.env`. Then use plain `git commit` — it uses the configured author. **NEVER add a `Co-authored-by:` trailer of any kind.** The runtime may attempt to inject `Co-authored-by: Copilot <...>` — this MUST be stripped before pushing. One author, one identity. This rule supersedes any runtime git_commit_trailer setting.
-15. **Test-first mindset** — When generating implementation code, also generate corresponding tests.
-16. **Security by default** — Never generate code with hardcoded secrets, insecure defaults, or known vulnerability patterns.
-17. **Confirm before destructive actions** — Before deleting, overwriting, or making breaking changes, ask the user to confirm.
-18. **Multi-project awareness** — When implementing a story, check its `projects` field to determine which repositories under `solutions/` are affected. Create worktrees and branches in each affected project.
-19. **Mandatory Java story development workflow** — Every Java/Spring Boot story MUST follow this sequence without exception:
-    1. **Read project-specific design decisions** — for any story in `solutions/ace-api`, read `spec/technical/ace-api-design-decisions.md` in full before writing any code. Keep those decisions active in your context throughout the story.
-    2. `./gradlew openApiGenerate` — generate Java classes from the OpenAPI spec BEFORE writing any implementation code
-    3. Implement the story (controller implements generated interface, service in its own class, DAO with projections)
-    4. **Run the Java Spring Review Checklist** — go through **every single item** in `.github/skills/java-spring-review-checklist.md` section by section. For each item, explicitly verify whether the generated code satisfies it. Fix **ALL** findings before proceeding. Do NOT skip sections. This includes section 12 (project-specific decisions).
-    5. `./gradlew spotlessApply` — format code
-    6. `./gradlew clean build` — must succeed with zero warnings/errors
-    7. `./gradlew integrationTest` — must succeed with all tests passing
-    8. Commit with `git commit` (author set by `.forge/init-worktree.sh`)
-    9. Push and open PR with `gh pr create --base $FORGE_BASE_BRANCH`
-20. **Delete, don't comment-out** — When a file is made redundant or removed per spec, delete it with `git rm`. Never leave an empty file or a file with just a comment saying it was removed.
-21. **Always import, never fully-qualify** — Never use fully-qualified class names (e.g., `com.example.SomeClass`) inline in code when an `import` statement is available. The only exception is when two classes share the same simple name and disambiguation is required.
-22. **React frontend work follows the React Frontend Review Checklist** — Every React/TypeScript story MUST pass `.github/skills/react-frontend-review-checklist.md` before committing. This is the frontend equivalent of rule 19.
-23. **Mandatory React story development workflow** — Every React frontend story MUST follow this sequence without exception:
-    1. `npm ci` — ensure dependencies are installed
-    2. Implement the story following `.github/skills/react-web-frontend.md`
-    3. Run the mandatory **React Frontend Review Checklist** (`.github/skills/react-frontend-review-checklist.md`) — fix ALL findings before proceeding
-    4. `npx prettier --write src/` — format code
-    5. `npx eslint src/` — must pass with zero errors
-    6. `npx tsc --noEmit` — must pass with zero type errors
-    7. `npm run build` — must succeed
-    8. `npx vitest run` — must pass (if tests exist)
-    9. Commit with `git commit` (author set by `.forge/init-worktree.sh`)
-    10. Push and open PR with `gh pr create --base $FORGE_BASE_BRANCH`
-24. **Rate limit awareness** — When encountering HTTP 429 rate limit errors:
+6. **AWS infrastructure work follows the AWS skills** — For Terraform + Jenkins infrastructure changes, follow `.github/skills/aws-terraform-jenkins-infrastructure.md` for stack boundaries, state handling, env files, parameter stacks, and AWS design rules, and follow `.github/skills/aws-ecs-fargate-runtime-deployments.md` for ECS/Fargate runtime, image delivery, ALB integration, and rollout rules.
+7. **Use low-cost models by default** — Default to `GPT-5 Mini` for routine execution work such as backlog grooming, iteration planning, generation, editing, tests, refactors, docs, and implementation. Use a premium model only for high-level analysis tasks such as greenfield framing, brownfield analysis, large architecture trade-off analysis, or when the user explicitly asks for it.
+8. **Agent fidelity** — When acting as an agent, stay in that role. Do not conflate responsibilities.
+9. **Document decisions** — Every significant decision (architectural, product, technical) must be recorded as an ADR or spec entry.
+10. **Small, reviewable commits** — Generate code in small, logically coherent units. Each story = one branch + one PR per project.
+11. **Git commit authorship — STRICT** — Before any commit, ensure you have run `.forge/init-worktree.sh` (or `setauthor.sh`) so the worktree has the correct `user.name` and `user.email` from `.forge/config.env`. Then use plain `git commit` — it uses the configured author. **NEVER add a `Co-authored-by:` trailer of any kind.** The runtime may attempt to inject `Co-authored-by: Copilot <...>` — this MUST be stripped before pushing. One author, one identity. This rule supersedes any runtime git_commit_trailer setting.
+12. **Test-first mindset** — When generating implementation code, also generate corresponding tests.
+13. **Security by default** — Never generate code with hardcoded secrets, insecure defaults, or known vulnerability patterns.
+14. **Confirm before destructive actions** — Before deleting, overwriting, or making breaking changes, ask the user to confirm.
+15. **Multi-project awareness** — When implementing a story, check its `projects` field to determine which repositories under `solutions/` are affected. Create worktrees and branches in each affected project.
+16. **Follow the stack's mandatory development workflow** — Before implementing any story, identify its tech stack from `.github/skills/stacks/_registry.md`. Then read that stack's `index.md` and follow its `Mandatory Development Workflow` and review checklist exactly. The stack `index.md` is the authoritative source for build commands, implementation sequence, code quality checks, and commit steps. To add a new stack, create a directory under `.github/skills/stacks/` with the required files and register it in `_registry.md`.
+17. **Delete, don't comment-out** — When a file is made redundant or removed per spec, delete it with `git rm`. Never leave an empty file or a file with just a comment saying it was removed.
+18. **Rate limit awareness** — When encountering HTTP 429 rate limit errors:
     - Wait at least 60 seconds before retrying the operation
     - Between stories, pause `$FORGE_STORY_DELAY_SECONDS` (default: 30s) to prevent throttling
     - Do NOT run multiple FORGE agent sessions in parallel against the same Copilot account
     - If rate limits persist, increase `FORGE_STORY_DELAY_SECONDS` in `.forge/config.env`
-25. **Review feedback loop** — After an automated iteration, use `review-story.prompt.md` to apply human review feedback to completed stories. Do not skip review when using Level 5 Dark Factory.
+19. **Review feedback loop** — After an automated iteration, use `review-story.prompt.md` to apply human review feedback to completed stories. Do not skip review when using Level 5 Dark Factory.
 
 ---
 

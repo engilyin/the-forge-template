@@ -40,15 +40,19 @@ MapStruct for mapping, and Gradle for builds. Follows API-First with OpenAPI cod
 
 ## Mandatory Development Workflow
 
-1. Read project-specific design decisions (if applicable)
-2. `./gradlew openApiGenerate`
-3. Implement (controller → service → DAO)
-4. Run review checklist — fix ALL findings
-5. `./gradlew spotlessApply`
-6. `./gradlew clean build` — zero errors
-7. `./gradlew integrationTest` — all pass
-8. Commit with `git commit`
-9. Push and open PR
+1. **Read project-specific design decisions** — for stories in any project, read `spec/technical/<project>-design-decisions.md` in full before writing any code. Keep those decisions active in context throughout the story.
+2. `./gradlew openApiGenerate` — generate Java classes from the OpenAPI spec BEFORE writing any implementation code
+3. Implement the story (controller implements generated interface, service in its own class, DAO with projections)
+4. **Run the Java Spring Review Checklist** (`review-checklist.md`) — go through **every single item** section by section. Fix **ALL** findings before proceeding. Do NOT skip sections. This includes the project-specific decisions section.
+5. `./gradlew spotlessApply` — format code
+6. `./gradlew clean build` — must succeed with zero warnings/errors
+7. `./gradlew integrationTest` — must succeed with all tests passing
+8. Commit with `git commit` (author set by `.forge/init-worktree.sh`)
+9. Push and open PR with `gh pr create --base $FORGE_BASE_BRANCH`
+
+## Code Style Rules
+
+- **Always import, never fully-qualify** — Never use fully-qualified class names (e.g., `com.example.SomeClass`) inline in code when an `import` statement is available. The only exception is when two classes share the same simple name and disambiguation is required.
 
 ## Agent
 

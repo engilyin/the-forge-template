@@ -13,11 +13,16 @@ A stack directory contains:
 
 | File | Purpose | Required |
 |------|---------|----------|
-| `index.md` | Stack overview, file layout, build/validation commands | ✅ Yes |
+| `index.md` | Stack overview, file layout, build/validation commands, **Mandatory Development Workflow** | ✅ Yes |
 | `patterns.md` | Code patterns, conventions, anti-patterns | ✅ Yes |
 | `review-checklist.md` | Pre-commit mandatory review checklist | ✅ Yes |
 | `story-template.md` | Story spec template with code skeletons | ✅ Yes |
 | `*.md` (additional) | Supplementary aspect files (e.g., `virtualized-tables.md`) | Optional |
+
+> **Contract:** Every `index.md` MUST contain a `## Mandatory Development Workflow` section.
+> This is the authoritative step-by-step sequence Copilot follows for every story of that stack.
+> The generic rule in `copilot-instructions.md` (rule 16) delegates all stack-specific workflow
+> and checklist details to this section. When adding a new stack, this section is required.
 
 When a stack grows too large, **split aspect files** from `patterns.md`:
 - `patterns-reactive.md` — reactive/async patterns
@@ -66,6 +71,18 @@ The `index.md` file in each stack directory serves as the entry point and lists 
 ## Build & Validation Commands
 [commands]
 
+## Mandatory Development Workflow
+
+1. [Step 1 — e.g., install deps / code generation]
+2. Implement the story following `patterns.md`
+3. Run review checklist (`review-checklist.md`) — fix ALL findings
+4. [Format command]
+5. [Lint/type-check commands] — must pass with zero errors
+6. [Build command] — must succeed
+7. [Test command] — must pass
+8. Commit with `git commit` (author set by `.forge/init-worktree.sh`)
+9. Push and open PR with `gh pr create --base $FORGE_BASE_BRANCH`
+
 ## Agent
 `[agent-name]`
 ```
@@ -76,5 +93,4 @@ The `index.md` file in each stack directory serves as the entry point and lists 
 
 1. Remove the directory from `.github/skills/stacks/`
 2. Remove from the **Active Stacks** table above
-3. Remove stack-specific rules from `copilot-instructions.md`
-4. Optionally remove the agent and CLI skill wrapper
+3. Optionally remove the agent and CLI skill wrapper
