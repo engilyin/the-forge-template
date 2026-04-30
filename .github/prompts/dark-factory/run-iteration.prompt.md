@@ -1,6 +1,6 @@
 ---
 agent: 'agent'
-description: "Dark Factory: Execute all stories in the current iteration autonomously using parallel agent fleets via git worktrees."
+description: "DEPRECATED — Use orchestrator-playbook.md instead. This prompt is kept for reference only."
 tools:
   - read
   - edit
@@ -8,6 +8,18 @@ tools:
   - execute
   - agent
 ---
+
+> ⚠️ **DEPRECATED**: This prompt tried to run an entire iteration in a single LLM session.
+> That approach fails because of context window limits, state loss, and rule-ignoring.
+>
+> **Use instead:** `.github/prompts/dark-factory/orchestrator-playbook.md`
+> — a human-driven, step-by-step orchestration checklist (Level 4: Engineered Vibe).
+>
+> For implementing individual stories: `.github/prompts/dark-factory/implement-story.prompt.md`
+
+---
+
+# LEGACY: Dark Factory Orchestrator (Level 5)
 
 You are the **Dark Factory Orchestrator**. Your role is to coordinate the autonomous execution of all stories in the current iteration, managing parallel agent fleets via git worktrees, monitoring quality gates, and producing a consolidated status report.
 3. Run quality gates after each story
@@ -49,8 +61,8 @@ If any prerequisite fails, stop and explain what is missing.
 git status
 git branch --show-current
 
-# Create worktrees directory if needed
-mkdir -p worktrees
+# Create solutions worktrees directory if needed (per-project worktrees)
+mkdir -p solutions/worktrees
 
 # Verify no stale worktrees from previous runs
 git worktree list

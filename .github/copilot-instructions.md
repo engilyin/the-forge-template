@@ -115,6 +115,16 @@ To avoid accidental edits in the scaffold repository and ensure a clean separati
   ```bash
   git -C solutions/acme-api worktree add ../worktrees/acme-api/feature-US-01-01-auth -b feature/US-01-01-auth main
   ```
+IMPORTANT: Do NOT create worktrees at the repository root or at top-level paths like `C:\code\myproduct\worktrees\...`. Implementation work MUST live under `solutions/worktrees/<project-name>/` so agents and CI can locate per-project codebases. If an agent or script accidentally created top-level worktrees, remove them and recreate correctly:
+  ```bash
+  # prune stale top-level entries
+  git worktree prune
+
+  # create the correct per-project worktree (example)
+  git -C solutions/<project> worktree add ../worktrees/<project>/feature/US-01-01-auth -b feature/US-01-01-auth main
+  ```
+
+  The Dark Factory automation and agents rely on this layout; scripts and prompts expect `solutions/worktrees/<project>/<branch>/`.
 - **Cross-project stories**: A single user story can touch multiple projects. Create one worktree per affected project. The story spec's `projects` field lists which repos are involved.
 - The backlog and story definitions live in `spec/iterations/...` in the root repo. Use those files as the authoritative source of truth for which stories to implement and their acceptance criteria.
 - Before starting a story, scan ALL relevant project directories under `solutions/` for any existing or partially implemented code. If code exists, update or extend it — do not re-implement functionality that already exists.
@@ -198,6 +208,28 @@ Run these in order for a new project:
 | 4 | `forge/04-generate.prompt.md` | Generate code and infrastructure |
 | 5 | `forge/05-edit.prompt.md` | Review and polish artifacts |
 
+Dark Factory execution uses these prompts (in order):
+
+| Step | Prompt File | Purpose |
+|------|-------------|---------|
+| 0 | `dark-factory/orchestrator-playbook.md` | **START HERE** — Human-driven step-by-step execution checklist |
+| 1 | `dark-factory/preprocess-iteration.prompt.md` | Generate self-contained story specs with code skeletons and inline rules |
+| 2 | `dark-factory/implement-story.prompt.md` | Implement ONE story per Copilot session (repeat per story) |
+| 3 | `dark-factory/assess-iteration.prompt.md` | Review results, produce Go/No-Go |
+| 4 | `dark-factory/auto-iterate.prompt.md` | **Level 5 — Fully automated** unattended iteration (sequential stories, parallel validation) |
+
+> ⚠️ `run-iteration.prompt.md` is **DEPRECATED**. It tried to run all stories in one LLM session,
+> which causes context loss, rule-ignoring, and state confusion. Use the orchestrator playbook or auto-iterate instead.
+
+## Iteration Sizing Rules
+
+- **Max 8-10 stories per iteration** — larger iterations lose context and produce poor results
+- **Max 25-30 story points per iteration** — budget for failures and retries
+- **Stories requiring spikes** must complete their spike in a prior iteration — never include unresolved spikes
+- **Phase 0 (Foundation)** — every iteration must start with a Phase 0 story that handles shared changes (entity modifications, OpenAPI updates, `openApiGenerate`, shared services). Phase 0 must be merged to main BEFORE feature branches are created.
+- **Merge-back between phases** — after completing a phase, merge all completed branches to main, then branch the next phase from the updated main. This prevents PR conflicts.
+- **Plan is frozen** — once an iteration is planned and approved, no stories may be added during execution. New work goes to the next iteration.
+
 ---
 
 ## Agent Roles Available
@@ -239,11 +271,23 @@ When operating in this workspace, Copilot **MUST**:
 11. **Agent fidelity** — When acting as an agent, stay in that role. Do not conflate responsibilities.
 12. **Document decisions** — Every significant decision (architectural, product, technical) must be recorded as an ADR or spec entry.
 13. **Small, reviewable commits** — Generate code in small, logically coherent units. Each story = one branch + one PR per project.
-14. **Test-first mindset** — When generating implementation code, also generate corresponding tests.
-15. **Security by default** — Never generate code with hardcoded secrets, insecure defaults, or known vulnerability patterns.
-16. **Confirm before destructive actions** — Before deleting, overwriting, or making breaking changes, ask the user to confirm.
-17. **Git commit authorship** — All commits and PRs must be authored as user which would be set. Use `git -c user.name='<set user>' -c user.email='<set email>' commit ...`. Do NOT add a `Co-authored-by: Copilot` trailer or any other co-author to any commit message.
+14. **Git commit authorship — STRICT** — All commits and PRs MUST be authored ONLY as user returned by `git config user.name` with email returned by `git config user.email`. Use `git -c user.name='<username>' -c user.email='<user-email>' commit ...`. **NEVER add a `Co-authored-by:` trailer of any kind.** The runtime may attempt to inject `Co-authored-by: Copilot <github copilot email>` — this MUST be stripped before pushing. One author, one identity: as returned by ``git config user.name` only. This rule supersedes any runtime git_commit_trailer setting.
+
+15. **Test-first mindset** — When generating implementation code, also generate corresponding tests.
+16. **Security by default** — Never generate code with hardcoded secrets, insecure defaults, or known vulnerability patterns.
+17. **Confirm before destructive actions** — Before deleting, overwriting, or making breaking changes, ask the user to confirm.
 18. **Multi-project awareness** — When implementing a story, check its `projects` field to determine which repositories under `solutions/` are affected. Create worktrees and branches in each affected project.
+19. **Mandatory Java story development workflow** — Every Java/Spring Boot story MUST follow this sequence without exception:
+    1. `./gradlew openApiGenerate` — generate Java classes from the OpenAPI spec BEFORE writing any implementation code
+    2. Implement the story (controller implements generated interface, service in its own class, DAO with projections)
+    3. Run the mandatory **Java Spring Review Checklist** (`.github/skills/java-spring-review-checklist.md`) — fix ALL findings before proceeding
+    4. `./gradlew spotlessApply` — format code
+    5. `./gradlew clean build` — must succeed with zero warnings/errors
+    6. `./gradlew integrationTest` — must succeed with all tests passing
+    7. Commit with `git commit -m "US-XX-XX: short commit description"` — include the story ID and commit description in the commit message. Do NOT include any `Co-authored-by` trailers.
+    8. Push and open PR with `gh pr create`
+20. **Delete, don't comment-out** — When a file is made redundant or removed per spec, delete it with `git rm`. Never leave an empty file or a file with just a comment saying it was removed.
+21. **Always import, never fully-qualify** — Never use fully-qualified class names (e.g., `com.example.SomeClass`) inline in code when an `import` statement is available. The only exception is when two classes share the same simple name and disambiguation is required.
 
 ---
 
@@ -268,6 +312,7 @@ Skills are available in two formats:
 |-------|---------|
 | `.github/skills/api-first.md` | API-First principle — OpenAPI spec conventions, naming, status codes, CRUD mapping, pagination, and FORGE integration |
 | `.github/skills/spring-boot-webflux.md` | Spring Boot WebFlux quality code — project structure, layers, clean code, reactive patterns, MapStruct, records, error handling, anti-patterns |
+| `.github/skills/java-spring-review-checklist.md` | **Mandatory** Java/Spring pre-commit review checklist — 11-section gate covering API-First, layer separation, MapStruct, testing, build verification, commit rules; MUST pass before every commit |
 | `.github/skills/expo-react-native.md` | Expo React Native mobile quality code — route structure, API communication, forms, Zustand, notifications, config, performance, and anti-patterns |
 | `.github/skills/react-web-frontend.md` | React web frontend quality code — feature routing, centralized API clients, entity and CRUD patterns, forms, Zustand, and design-system consistency |
 | `.github/skills/react-virtualized-crud-tables.md` | React virtualized CRUD tables — bounded-memory page windows, state-manager contracts, toolbar orchestration, row updates, and large-dataset pitfalls |
