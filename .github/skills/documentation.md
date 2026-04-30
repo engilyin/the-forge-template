@@ -1,8 +1,7 @@
 ---
-name: "Documentation Skill"
-description: "Standards and practices for writing and maintaining project documentation within the repository."
-tags: [skill, docs]
-type: skill
+name: "Documentation"
+description: "Standards and patterns for writing and maintaining project documentation."
+user-invocable: false
 ---
 
 # Documentation Skill

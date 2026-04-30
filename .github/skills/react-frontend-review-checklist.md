@@ -17,7 +17,7 @@ user-invocable: true
 > 5. `npx tsc --noEmit` — must pass with zero type errors
 > 6. `npm run build` — must succeed
 > 7. `npx vitest run` — all tests pass (if tests exist)
-> 8. Commit with default author — NO Co-authored-by trailer
+> 8. Commit with author from local git config — NO Co-authored-by trailer
 > 9. Push branch and open PR
 
 ---
@@ -45,7 +45,7 @@ user-invocable: true
 ## 3. API Communication — Layer Isolation
 
 - [ ] **All HTTP calls go through `src/services/api/*.ts`** — no `axios.get()`, `fetch()`, or direct HTTP calls in components, hooks, or stores.
-- [ ] **Uses correct Axios instance** — protected endpoints use `clientApi`; public endpoints (login, register) use `tokenlessApi`. Never create ad-hoc Axios instances.
+- [ ] **Uses correct Axios instance** — protected endpoints use `staffApi`; public endpoints (login, register) use `tokenlessApi`. Never create ad-hoc Axios instances.
 - [ ] **API functions return typed data** — every API function has explicit input and return types (from `src/types/`). No `any` return types.
 - [ ] **No business logic in API layer** — API service files are pure data transport: serialize request → HTTP call → deserialize response. No conditionals, no transformations.
 - [ ] **Query keys follow convention** — TanStack Query keys follow `['entity', ...params]` pattern (e.g., `['guardians', guardianId]`).
@@ -57,7 +57,7 @@ user-invocable: true
 - [ ] **Server data managed by TanStack Query** — lists, details, and mutations use `useQuery` / `useMutation`. Never store server data in Zustand.
 - [ ] **Client state in Zustand** — auth tokens, UI preferences (sidebar, theme), and table state (sort, filter, page size) use Zustand stores.
 - [ ] **Zustand stores are minimal** — stores hold only state + actions. No derived computations or API calls inside stores.
-- [ ] **Persisted stores annotated** — stores using `persist()` middleware have a unique storage key (e.g., `app-auth`, `app-layout`).
+- [ ] **Persisted stores annotated** — stores using `persist()` middleware have a unique storage key (e.g., `portal-auth`, `portal-layout`).
 - [ ] **No prop drilling for global state** — use Zustand selectors (`useStore(s => s.field)`) or context, not deep prop chains.
 - [ ] **No large data in stores** — entity lists, arrays of records, and API responses must NOT be stored in Zustand. Use TanStack Query cache.
 
@@ -130,7 +130,7 @@ user-invocable: true
 
 ## 11. Commit & PR
 
-- [ ] **Author is default set on the repo** — use `git commit -m "US-XX-XX commit description"` with no `--author` flag, no `Co-authored-by` trailers. The commit author must be the default configured on the local machine, with no additional trailers.
+- [ ] **Author is default set on the repo** — use `git commit -m "..."` with no `--author` flag, no `Co-authored-by` trailers. The commit author must be the default configured on the local machine, with no additional trailers.
 - [ ] **NO `Co-authored-by: Copilot` trailer** — this trailer must never appear in any commit message in this repository
 - [ ] **Branch name matches story** — `feature/US-FE-XX-YY` format
 - [ ] **PR created in the correct project repo** — not in the scaffold root repo

@@ -1,331 +1,496 @@
 ---
-name: "React Virtualized CRUD Tables Skill"
-description: "Patterns for building virtualized, bounded-memory CRUD table engines with toolbar orchestration and page caching."
-tags: [skill, frontend, tables]
-type: skill
+name: "React Virtualized CRUD Tables"
+description: "Patterns for building large virtualized CRUD tables in React using Virtual Infinite Scroll."
+user-invocable: false
 ---
 
-# React Virtualized CRUD Tables Skill
+# React Virtualized CRUD Tables — Virtual Infinite Scroll
 
-Use this skill for React web features that render very large datasets through virtualized, infinitely scrolling CRUD tables. Apply it together with `.github/skills/react-web-frontend.md` when a feature needs a reusable table engine, bounded-memory paging, row actions, or rich toolbar-to-table orchestration.
+**This is the canonical pattern for ALL data list screens in projects.**
+
+Every list of records — jobs, agencies, staff, guardians, partners — MUST use the Virtual Infinite Scroll (VIS) `DataTable` pattern documented here. Do NOT use paginated tables (Previous/Next buttons, page number controls). The list looks seamless to the user: records load automatically as they scroll, with no visible page boundary.
+
+The reference implementation lives in `solutions/acme-frontend/src/components/parts/DataTable.tsx`. Copy it to any new project's `src/components/parts/DataTable.tsx` and keep it identical unless you have a specific approved reason to diverge.
+
+---
+
+## The Golden Rule
+
+> **Every list screen = `DataTable` + `StateManager` + feature Zustand store + `useInfinite` hook**
+
+There is no exception for "small lists" or "simple cases". If you are showing more than 20 records, use this pattern.
 
 ---
 
 ## When To Use This Skill
 
-Use this skill when all or most of the following are true:
+Use for every entity list in an admin or staff portal:
 
-- the feature can load thousands or millions of rows
-- the backend exposes stateless offset or page-based list APIs
-- the UI must scroll fluidly without rendering the full dataset
-- filters, sort, or page size must survive route changes or refreshes
-- row-level actions need precise local updates without reloading everything
+- jobs, agencies, staff, guardians, partners, incidents
+- any backend list API with offset/limit (first/max) paging
+- any list that needs sort, filter, or refresh
 
-Do not use this skill for tiny reference lists, simple lookup dropdowns, or ordinary paginated detail pages.
+Do not use for inline dropdown lookups, reference select lists, or non-scrollable chips.
 
 ---
 
 ## Architecture Split
 
-Large admin tables are not ordinary list components. Split responsibilities deliberately.
+Five responsibilities, five files:
 
-- feature store owns durable table state such as sort token, filter values, page size, and refresh signals
-- toolbar owns user intent only: filter submit, clear, refresh, export, page-size changes
-- table owns virtualization, visible-window fetching, bounded page cache, and scroll-aware pruning
-- row action components own row-local actions only
-- API modules own request contracts and response parsing
-- feature page is the orchestration boundary that wires the state manager, toolbar, and table together
+| Responsibility | File |
+|---|---|
+| Durable table state (sort, filter, page size) | `src/store/use<Entity>Store.ts` |
+| Page fetcher (bridges store to API) | `src/hooks/<entity>/useInfinite.ts` |
+| HTTP request | `src/services/api/<entity>.ts` |
+| Feature toolbar (filter form) | `src/features/<entity>/<Entity>Toolbar.tsx` |
+| Feature list page (orchestrates all) | `src/features/<entity>/pages/index.tsx` |
+| Shared table engine | `src/components/parts/DataTable.tsx` (do not modify per feature) |
+| Shared row actions container | `src/components/parts/DataTableActions.tsx` |
 
-The reusable table must behave like an engine. It should not know feature-specific field names, routes, or business language.
+The `DataTable` component knows nothing about jobs, agencies, or any entity. It receives a `StateManager` contract and column definitions.
 
 ---
 
-## What The Table Engine Must Do
+## `DataTable` Component API
 
-- request pages by page index and current durable state
-- keep a bounded in-memory page map
-- estimate totals conservatively when the backend does not provide an exact count
-- fetch more pages when the visible range approaches unloaded space
-- prune pages outside a configurable overscan or buffer window
-- expose imperative helpers such as `refresh()`, `reset()`, `scrollToTop()`, and `updateRow()`
-- preserve stable row identity so targeted row patching is possible
+Location: `src/components/parts/DataTable.tsx`
 
-The page map is a working window, not a permanent cache.
+### Types
+
+```ts
+// Column definition — one per visible column
+type Column<T> = {
+  key: string;             // property name (used as fallback renderer)
+  label: string;           // header text
+  sortable?: boolean;      // shows sort chevrons when true
+  sortKeys?: [string, string]; // [ascToken, descToken] sent to backend via sortToken
+  render?: (row: T) => React.ReactNode; // custom cell renderer
+  width?: string;          // fixed flex-basis e.g. '120px'
+  minWidth?: string;       // min-width for responsive layouts
+};
+
+// What the DataTable calls back to fetch each page
+export type FetchResult<T> = { items: Array<T>; total?: number };
+
+// Contract the feature page provides to the DataTable
+export type StateManager<T> = {
+  getState: () => DataTableState;
+  subscribe?: (cb: () => void) => () => void; // triggers reset on change
+  updateSort?: (keyA: string, keyB?: string) => void;
+  fetchPage: (pageIndex: number, state: DataTableState) => Promise<FetchResult<T>>;
+  getPageSize?: () => number;
+};
+
+export type DataTableState = {
+  sortToken?: string | null;
+  filter?: string | null;
+  pageSize: number;
+  [key: string]: unknown; // extra filter fields passed through
+};
+
+// Imperative handle (via ref)
+export type DataTableHandle = {
+  refresh: () => void;    // reset + re-fetch from page 0
+  reset: () => void;      // clear cache, scroll to top
+  updateRow: (id: string | number, updater: ((row: any) => any) | any) => void;
+};
+```
+
+### Props
+
+```ts
+type Props<T> = {
+  stateManager: StateManager<T>;
+  columns: Array<Column<T>>;
+  onRowClick?: (row: T) => void;  // makes rows clickable
+  loading?: boolean;              // external loading flag (shows spinner over table)
+  noRecordsText?: string;         // empty state message
+  rowHeight?: number;             // default 52px
+  height?: string | number;       // default 'calc(100vh - 280px)'
+  pageBuffer?: number;            // pages to prefetch beyond viewport, default 4
+};
+```
+
+### Behaviour
+
+- Fetches page 0 on mount
+- As the user scrolls, `@tanstack/react-virtual` reports which rows are visible
+- `DataTable` maps visible row indices to page indices and fetches missing pages
+- Pages outside `pageBuffer` on either side of the viewport are **pruned from memory** after 500ms — bounded memory, not unbounded accumulation
+- When the store emits a change via `stateManager.subscribe()`, the table calls `reset()` internally — clears all pages, scrolls to top, fetches page 0 again
+- A short page (length < pageSize) signals the definitive end of data
+- Shows "Loading…" skeleton rows for unloaded positions; "All records loaded" footer when end reached
+
+---
+
+## `DataTableActions` Component
+
+Location: `src/components/parts/DataTableActions.tsx`
+
+A thin wrapper that renders action buttons inside a row's actions column.
+
+```tsx
+type Props<T> = {
+  row?: T;
+  actions?: (row: T) => ReactNode;
+};
+
+// Usage inside a column render:
+{
+  key: 'actions',
+  label: '',
+  render: (r: JobRecord) => (
+    <DataTableActions
+      row={r}
+      actions={(row) => (
+        <div className="flex items-center gap-2">
+          <BaseButton size="sm" onClick={(e) => { e.stopPropagation(); handleEdit(row) }}>Edit</BaseButton>
+        </div>
+      )}
+    />
+  ),
+  width: '120px',
+  minWidth: '100px',
+}
+```
+
+Always call `e.stopPropagation()` inside row-action click handlers when the row itself is navigable via `onRowClick`.
+
+---
+
+## Feature Store Pattern
+
+The store holds durable UI intent only. It never holds fetched rows.
+
+```ts
+// src/store/useJobsStore.ts
+import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
+
+type JobsState = {
+  sortKey: string | null
+  statusFilter: string | null
+  pageSize: number
+  setSort: (key: string | null) => void
+  setStatusFilter: (status: string | null) => void
+  setPageSize: (n: number) => void
+  reset: () => void
+}
+
+export const useJobsStore = create<JobsState>()(
+  persist(
+    (set) => ({
+      sortKey: 'id-desc',
+      statusFilter: null,
+      pageSize: 50,
+      setSort: (key) => set({ sortKey: key }),
+      setStatusFilter: (status) => set({ statusFilter: status }),
+      setPageSize: (n) => set({ pageSize: n }),
+      reset: () => set({ sortKey: 'id-desc', statusFilter: null, pageSize: 50 }),
+    }),
+    { name: 'jobs-store', storage: createJSONStorage(() => localStorage) }
+  )
+)
+
+export default useJobsStore
+```
+
+**Rules:**
+- Store name is kebab-case entity name + `-store`
+- Default sort should match backend default (usually `id-desc`)
+- `reset()` restores defaults — called from toolbar "Clear" button
+- Never store fetched arrays here
+
+---
+
+## `useInfinite` Hook Pattern
+
+The hook is a thin page-fetcher adapter between the store and the API service. It converts the `DataTable`'s `(pageIndex, pageSize, sortKey, filters)` call into the specific API call shape.
+
+```ts
+// src/hooks/jobs/useInfinite.ts
+import { list as listJobs } from '@/services/api/jobs'
+import type { ShortJobInfo } from '@/types/jobs'
+
+type FetchResult = { items: Array<ShortJobInfo> }
+
+export function useJobsInfinite() {
+  const fetchPage = async (
+    pageIndex: number,
+    pageSize: number,
+    sortKey?: string,
+    filters?: { status?: string }
+  ): Promise<FetchResult> => {
+    const offset = pageIndex * pageSize
+    const res = await listJobs({
+      first: offset,
+      max: pageSize,
+      sort: sortKey,
+      status: filters?.status,
+    })
+    const items = Array.isArray(res) ? res : (res?.items ?? [])
+    return { items }
+  }
+
+  return { fetchPage }
+}
+
+export default useJobsInfinite
+```
+
+---
+
+## Feature List Page (Orchestration)
+
+The list page wires the store, the hook, and the `DataTable` together via `stateManager`. The `stateManager` object is a `useMemo` so it stays stable across renders.
+
+```tsx
+// src/features/jobs/pages/index.tsx
+import { useMemo, useRef } from 'react'
+import type { DataTableHandle } from '@/components/parts/DataTable'
+import type { ShortJobInfo } from '@/types/jobs'
+import useJobsInfinite from '@/hooks/jobs/useInfinite'
+import useJobsStore from '@/store/useJobsStore'
+import { goTo } from '@/lib/navigation'
+import DataTable from '@/components/parts/DataTable'
+import DataTableActions from '@/components/parts/DataTableActions'
+import Toolbar from '@/components/parts/Toolbar'
+import BaseButton from '@/components/ui/BaseButton'
+import StatusBadge from '@/components/entities/jobs/StatusBadge'
+import JobsToolbar from '@/features/jobs/JobsToolbar'
+
+export default function JobsIndex() {
+  const { fetchPage } = useJobsInfinite()
+  const tableRef = useRef<DataTableHandle | null>(null)
+  const statusFilter = useJobsStore((s) => s.statusFilter)
+
+  const stateManager = useMemo(() => ({
+    updateSort: (keyA: string, keyB?: string) => {
+      const store = useJobsStore.getState()
+      const current = store.sortKey ?? undefined
+      if (current === keyA) {
+        store.setSort(keyB ?? null)
+      } else if (current === keyB) {
+        store.setSort(keyA)
+      } else {
+        store.setSort(keyA)
+      }
+    },
+
+    getState: () => {
+      const s = useJobsStore.getState()
+      return {
+        sortToken: s.sortKey,
+        statusFilter: s.statusFilter,
+        pageSize: s.pageSize,
+      }
+    },
+
+    subscribe: (cb: () => void) => useJobsStore.subscribe(cb),
+
+    getPageSize: () => useJobsStore.getState().pageSize || 50,
+
+    fetchPage: async (pageIndex: number, state: Record<string, unknown>) => {
+      const pageSize = (state.pageSize as number) || 50
+      const sortToken = state.sortToken as string | undefined
+      const status = state.statusFilter as string | undefined
+      const res = await fetchPage(pageIndex, pageSize, sortToken, { status })
+      return { items: res.items }
+    },
+  }), [fetchPage])
+
+  const handleView = (r: ShortJobInfo) => goTo('/staff/jobs/$jobId', { jobId: String(r.jobId) })
+  const handleEdit = (r: ShortJobInfo) => goTo('/staff/jobs/$jobId/edit', { jobId: String(r.jobId) })
+
+  return (
+    <div className="p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
+      <Toolbar
+        title="Jobs"
+        subtitle="Manage security jobs and shift assignments."
+      />
+
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+        <JobsToolbar
+          statusFilter={statusFilter}
+          onSubmit={(vals) => {
+            const store = useJobsStore.getState()
+            store.setStatusFilter(vals.status || null)
+          }}
+          onClear={() => useJobsStore.getState().reset()}
+          onRefresh={() => tableRef.current?.refresh()}
+        />
+        <div className="h-1 bg-orange" />
+        <DataTable
+          ref={tableRef}
+          stateManager={stateManager}
+          noRecordsText="No jobs found"
+          columns={[
+            { key: 'jobId', label: 'ID', sortable: true, sortKeys: ['id-asc', 'id-desc'], width: '72px', minWidth: '56px' },
+            { key: 'name', label: 'Job Name', sortable: true, sortKeys: ['name-asc', 'name-desc'], minWidth: '200px' },
+            { key: 'status', label: 'Status', render: (r: ShortJobInfo) => <StatusBadge status={r.status} />, width: '140px' },
+            { key: 'agencyName', label: 'Agency', render: (r: ShortJobInfo) => r.agencyName ?? '—', minWidth: '160px' },
+            { key: 'guardianName', label: 'Guardian', render: (r: ShortJobInfo) => r.guardianName ?? '—', minWidth: '160px' },
+            { key: 'whenDate', label: 'Scheduled', render: (r: ShortJobInfo) => r.whenDate ? new Date(r.whenDate).toLocaleDateString() : '—', width: '130px' },
+            { key: 'actions', label: '', render: (r: ShortJobInfo) => (
+              <DataTableActions
+                row={r}
+                actions={(row: ShortJobInfo) => (
+                  <div className="flex items-center gap-2">
+                    <BaseButton size="sm" onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleEdit(row) }}>Edit</BaseButton>
+                  </div>
+                )}
+              />
+            ), width: '100px', minWidth: '80px' },
+          ]}
+          onRowClick={handleView}
+        />
+      </div>
+    </div>
+  )
+}
+```
+
+---
+
+## Feature Toolbar Pattern
+
+The toolbar owns filter form state only. It emits values upward via callbacks and calls `onClear` / `onRefresh`.
+
+```tsx
+// src/features/jobs/JobsToolbar.tsx
+import { useForm } from 'react-hook-form'
+import { RefreshCw, X } from 'lucide-react'
+import { JOB_STATUS_OPTIONS } from '@/types/jobs'
+
+type FormValues = { status: string }
+
+type Props = {
+  statusFilter?: string | null
+  onSubmit?: (v: FormValues) => void
+  onClear?: () => void
+  onRefresh?: () => void
+}
+
+export default function JobsToolbar({ statusFilter, onSubmit, onClear, onRefresh }: Props) {
+  const { register, handleSubmit, reset } = useForm<FormValues>({
+    defaultValues: { status: statusFilter ?? '' },
+  })
+
+  const handleClear = () => {
+    reset({ status: '' })
+    onClear?.()
+  }
+
+  return (
+    <form onSubmit={handleSubmit((v) => onSubmit?.(v))} className="bg-white dark:bg-slate-800 p-4">
+      <div className="flex flex-col lg:flex-row lg:items-end gap-3">
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-slate-500 dark:text-slate-400">Status</label>
+          <select {...register('status')} className="h-10 px-3 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-orange/20 focus:border-orange focus:outline-none">
+            {JOB_STATUS_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <button type="submit" className="h-10 px-4 text-sm font-medium text-white bg-orange hover:bg-orange-dark rounded-lg transition-colors">Apply</button>
+          <button type="button" onClick={handleClear} className="h-10 px-3 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-1">
+            <X size={14} /> Clear
+          </button>
+          {onRefresh && (
+            <button type="button" onClick={onRefresh} className="h-10 w-10 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors" title="Refresh">
+              <RefreshCw size={18} />
+            </button>
+          )}
+        </div>
+      </div>
+    </form>
+  )
+}
+```
+
+---
+
+## Entity Component Pattern
+
+Status badges, avatar chips, and other entity-specific display primitives belong in `src/components/entities/<entity>/`. They are NOT feature-specific — they can be used in list columns, detail views, and forms.
+
+```tsx
+// src/components/entities/jobs/StatusBadge.tsx
+import { cn } from '@/lib/utils'
+import type { JobStatus } from '@/types/jobs'
+
+const STATUS_COLOURS: Record<string, string> = {
+  New: 'bg-gray-100 text-gray-700',
+  WrongAgency: 'bg-yellow-100 text-yellow-800',
+  Unfilled: 'bg-blue-100 text-blue-700',
+  Active: 'bg-green-100 text-green-700',
+  Completed: 'bg-emerald-100 text-emerald-700',
+  Cancelled: 'bg-red-100 text-red-700',
+}
+
+export default function StatusBadge({ status }: { status: JobStatus }) {
+  return (
+    <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium', STATUS_COLOURS[status] ?? 'bg-gray-100 text-gray-700')}>
+      {status}
+    </span>
+  )
+}
+```
 
 ---
 
 ## Layout Constraints
 
-Virtualization works only when layout is explicit.
+Virtualization requires explicit heights.
 
-- the table must render inside a controlled-height scroll container
-- parent pages must not introduce competing nested scroll regions accidentally
-- banners, filters, and toolbars above the table must be accounted for in the height calculation
-- dialogs with embedded tables need their own explicit scroll boundary
-
-If scroll ownership is ambiguous, the virtualizer becomes unstable and user perception degrades immediately.
+- the table's scroll container defaults to `calc(100vh - 280px)` — adjust via the `height` prop when toolbars or banners change the available space
+- never place the `DataTable` inside a CSS `overflow: hidden` ancestor that is shorter than one viewport row
+- do not nest two scroll containers (DataTable inside a scrollable modal without an explicit `height` override will break)
 
 ---
 
 ## Cache And Fetch Rules
 
-### Prefer custom page fetching over unbounded query caches
-
-TanStack Query is excellent for detail screens, lookups, and ordinary mutations. It is often the wrong cache model for large virtualized lists.
-
-For large table flows:
-
-- avoid using `useInfiniteQuery` as a hidden permanent page store
-- avoid mirroring loaded rows into Zustand
-- keep only nearby pages in memory
-- reset page windows when sort or filter changes
-
-### Sort and filter invalidation
-
-When the query shape changes:
-
-- clear cached pages
-- reset the estimated total or high-water mark
-- scroll back to the appropriate anchor, usually the top
-- fetch a fresh first page only
-
-Do not leave stale rows visible after a filter or sort transition.
+- do NOT use `useInfiniteQuery` for VIS lists — the DataTable page cache is its own bounded store
+- do NOT mirror fetched rows into Zustand
+- sort or filter change → `subscribe()` fires → DataTable calls `reset()` internally → pages cleared → page 0 fetched
+- short page (len < pageSize) → DataTable records definitive end and stops requesting further pages
 
 ---
 
-## State Manager Contract
+## Row Update vs Refresh
 
-The feature page should adapt feature state into a reusable table contract.
+After a mutation (edit, status change):
 
-```ts
-type DataTableState = {
-  sortToken: string | null;
-  filter: CustomerListFilter | null;
-  pageSize: number;
-};
-
-type StateManager<Row> = {
-  getState: () => DataTableState;
-  subscribe: (listener: () => void) => () => void;
-  updateSort: (ascendingToken: string, descendingToken?: string) => void;
-  fetchPage: (pageIndex: number, state: DataTableState) => Promise<PageResponse<Row>>;
-};
-```
-
-Concrete feature sample:
-
-```ts
-const stateManager: StateManager<CustomerRow> = {
-  getState: () => {
-    const state = useCustomerTableStore.getState();
-    return {
-      sortToken: state.sortToken,
-      filter: state.filter,
-      pageSize: state.pageSize,
-    };
-  },
-  subscribe: (listener) => useCustomerTableStore.subscribe(listener),
-  updateSort: (ascendingToken, descendingToken) => {
-    const store = useCustomerTableStore.getState();
-    const next = store.sortToken === ascendingToken ? (descendingToken ?? null) : ascendingToken;
-    store.setSortToken(next);
-  },
-  fetchPage: async (pageIndex, state) => {
-    return listCustomersPage({
-      offset: pageIndex * state.pageSize,
-      limit: state.pageSize,
-      sort: state.sortToken ?? undefined,
-      filter: state.filter ?? undefined,
-    });
-  },
-};
-```
-
----
-
-## Feature Store Sample
-
-The store should keep durable UI intent, not loaded datasets.
-
-```ts
-type CustomerListFilter = {
-  name?: string;
-  tier?: 'standard' | 'premium';
-  status?: 'active' | 'inactive';
-};
-
-type CustomerTableState = {
-  sortToken: string | null;
-  pageSize: number;
-  filter: CustomerListFilter | null;
-  refreshToken: number;
-  setSortToken: (sortToken: string | null) => void;
-  setPageSize: (pageSize: number) => void;
-  setFilter: (filter: CustomerListFilter | null) => void;
-  requestRefresh: () => void;
-};
-
-export const useCustomerTableStore = create<CustomerTableState>()(
-  persist(
-    (set) => ({
-      sortToken: 'createdAt-desc',
-      pageSize: 50,
-      filter: null,
-      refreshToken: 0,
-      setSortToken: (sortToken) => set({ sortToken }),
-      setPageSize: (pageSize) => set({ pageSize }),
-      setFilter: (filter) => set({ filter }),
-      requestRefresh: () => set((state) => ({ refreshToken: state.refreshToken + 1 })),
-    }),
-    { name: 'customer-table-state', storage: createJSONStorage(() => localStorage) },
-  ),
-);
-```
-
----
-
-## Toolbar-To-Table Communication
-
-The toolbar emits intent. The feature page decides orchestration.
-
-```tsx
-function CustomerToolbar() {
-  const { control, handleSubmit, reset } = useForm<CustomerListFilter>({
-    defaultValues: useCustomerTableStore((state) => state.filter ?? {}),
-  });
-  const setFilter = useCustomerTableStore((state) => state.setFilter);
-  const requestRefresh = useCustomerTableStore((state) => state.requestRefresh);
-
-  const submit = handleSubmit((values) => {
-    setFilter(normalizeCustomerFilter(values));
-  });
-
-  return (
-    <Toolbar>
-      <form onSubmit={submit} className="flex flex-wrap gap-3">
-        <ControlledTextField control={control} name="name" label="Name" />
-        <ControlledSelectField control={control} name="status" label="Status" options={statusOptions} />
-        <Button type="submit">Apply</Button>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => {
-            reset({});
-            setFilter(null);
-          }}
-        >
-          Clear
-        </Button>
-        <Button type="button" variant="outline" onClick={() => requestRefresh()}>
-          Refresh
-        </Button>
-      </form>
-    </Toolbar>
-  );
-}
-```
-
-The table subscribes to the state manager and resets its working window when those durable inputs change.
-
----
-
-## Row Actions Pattern
-
-Rows in a virtual list are ephemeral. Row action components must not assume they stay mounted.
-
-- stop row-click propagation when the row itself is navigable
-- execute the async action locally
-- emit the outcome upward through a callback
-- let the parent decide whether to patch the row or refresh the table
-
-```tsx
-type RowActionResult<Row> =
-  | { type: 'row-updated'; row: Row }
-  | { type: 'refresh-requested' };
-
-function CustomerRowActions({
-  row,
-  onResult,
-}: {
-  row: CustomerRow;
-  onResult: (result: RowActionResult<CustomerRow>) => void;
-}) {
-  const archiveMutation = useArchiveCustomer();
-
-  return (
-    <ActionGroup onClick={(event) => event.stopPropagation()}>
-      <Button
-        size="sm"
-        disabled={archiveMutation.isPending}
-        onClick={async () => {
-          const updated = await archiveMutation.mutateAsync(row.id);
-          onResult({ type: 'row-updated', row: updated });
-        }}
-      >
-        Archive
-      </Button>
-    </ActionGroup>
-  );
-}
-```
-
----
-
-## Reusable Feature Page Sample
-
-This is the orchestration layer that is hard to reinvent cleanly if the pattern is undocumented.
-
-```tsx
-export function CustomersIndexPage() {
-  const navigate = useNavigate();
-  const tableRef = useRef<DataTableHandle<CustomerRow>>(null);
-
-  return (
-    <PageLayout
-      title="Customers"
-      toolbar={<CustomerToolbar />}
-      actions={<Button onClick={() => navigate('/customers/create')}>New customer</Button>}
-    >
-      <DataTable
-        ref={tableRef}
-        stateManager={stateManager}
-        columns={customerColumns}
-        estimateRowHeight={44}
-        pageBuffer={2}
-        onRowClick={(row) => navigate(`/customers/${row.id}`)}
-        onRowActionResult={(result) => {
-          if (result.type === 'row-updated') {
-            tableRef.current?.updateRow(result.row.id, result.row);
-            return;
-          }
-          tableRef.current?.refresh();
-        }}
-      />
-    </PageLayout>
-  );
-}
-```
+- If the mutation returns the updated row: call `tableRef.current?.updateRow(row.id, updatedRow)` — patches the row in-place without a full re-fetch
+- If the mutation does not return the updated row, or if the change affects sort order: call `tableRef.current?.refresh()` — full reset and re-fetch from page 0
 
 ---
 
 ## Anti-Patterns
 
-- do not flatten all loaded pages into a permanent Zustand array
-- do not store the whole dataset in TanStack Query and again in component state
-- do not make toolbar components call table internals directly
-- do not make row action components own refresh or invalidation policy
-- do not let sort and filter logic drift differently across features
-- do not couple the reusable table engine to one entity name or route scheme
+❌ Using `useState` + `useEffect` to load a list with Previous/Next buttons  
+❌ Calling `useQuery` with the full list as a single cache key  
+❌ Storing fetched rows in Zustand  
+❌ Passing sort/filter state as React component props through multiple layers  
+❌ Placing `DataTable` inside an `overflow-auto` parent without an explicit height override  
+❌ Importing `@tanstack/react-table` for list screens — use `DataTable` from `components/parts/`  
 
 ---
 
 ## Checklist
 
-- the table scroll container has an explicit and stable height
-- cached pages are bounded and pruned outside the active window
-- sort and filter changes clear stale rows and reset fetch state
-- durable list state lives in a small focused store
-- row updates use stable entity identifiers
-- toolbar, page, and table communicate through explicit contracts
-- row action outcomes are routed through callbacks rather than hidden side effects
-- the feature page stays thin but remains the orchestration owner
+Before submitting a list screen:
+
+- [ ] `DataTable` from `src/components/parts/DataTable.tsx` is used (not a plain HTML table or TanStack Table direct usage)
+- [ ] `stateManager` is built with `useMemo` in the feature page
+- [ ] Feature Zustand store holds sort/filter/pageSize — never holds rows
+- [ ] `useInfinite` hook adapts store state to API call shape
+- [ ] Toolbar emits intent only via callbacks — does not call table internals directly
+- [ ] Sort toggle uses `updateSort(ascToken, descToken)` on the state manager
+- [ ] Row action buttons call `e.stopPropagation()` when row has `onRowClick`
+- [ ] Post-mutation: `updateRow()` for in-place patch, `refresh()` for full reload
+- [ ] `DataTable` scroll container height is explicit — either default or `height` prop override
+- [ ] No paginated controls (Previous/Next/page numbers) anywhere on the screen

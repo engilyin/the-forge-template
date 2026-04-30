@@ -1,8 +1,9 @@
 # FORGE Framework — Complete Reference
 
-> **FORGE** = **F**rame → **O**bstruct → **R**econstruct → **G**enerate → **E**dit
+> **FORGE** = **F**rame → **O**bstruct → **R**econstruct → **G**enerate → **E**dit → **A**mend
 >
 > An AI-assisted SDLC methodology originally designed for Claude Code and adapted for GitHub Copilot CLI.
+> The **Amend** phase (Phase 6) is the agile feedback loop — run it whenever specifications need updating based on implementation learnings.
 
 ---
 
@@ -259,6 +260,47 @@ Frame ──► Obstruct ──► Reconstruct
 
 ---
 
+## Phase 6: AMEND (Agile Feedback Loop)
+
+### Purpose
+**Update specifications** when implementation reveals that decisions were wrong, requirements were incomplete, or architecture needs adjustment. This is the agile feedback loop that makes FORGE iterative, not waterfall.
+
+### When to Use
+- A design decision proved wrong during implementation
+- Requirements were incomplete or ambiguous
+- Technical constraints emerged that weren't anticipated
+- A story's acceptance criteria need revision
+- New stories are needed that weren't in the original plan
+- Architecture needs adjustment based on real-world feedback
+
+### What Happens
+1. **Document the trigger** — what was learned, what was the original decision, what should it be
+2. **Impact assessment** — which specs, stories, and iterations are affected
+3. **Update affected specs** — modify spec files with change log annotations
+4. **Update backlog** — modify/add/remove stories; create rework stories for already-implemented code
+5. **Re-plan if needed** — continue current iteration, halt and re-plan, or absorb the change
+
+### Output Artifacts
+- `spec/amendments/AMEND-NNN.md` — amendment record
+- Updated spec files (with change log entries)
+- Updated `spec/business/backlog.md`
+- Rework stories (if completed stories are affected)
+- Updated iteration plan (if mid-iteration)
+
+### Copilot Prompt
+```
+Use: .github/prompts/forge/06-amend.prompt.md
+```
+
+### Success Criteria
+- [ ] Amendment is documented with clear rationale
+- [ ] Impact assessment covers all affected artifacts
+- [ ] Spec files are updated (not just stories)
+- [ ] Rework stories created for any completed work that needs changes
+- [ ] Current iteration plan updated with the chosen strategy (continue/halt/absorb)
+
+---
+
 ## Using FORGE with GitHub Copilot CLI
 
 ### Interactive Mode (Levels 3-4)
@@ -267,13 +309,17 @@ Use Copilot chat to walk through each phase manually. Reference prompts explicit
 @workspace Run .github/prompts/forge/01-frame.prompt.md
 ```
 
-### Dark Factory Mode (Level 5)
-Trigger autonomous parallel execution using:
-```
-@workspace Run .github/prompts/dark-factory/run-iteration.prompt.md
+### Dark Factory Mode (Level 4 / Level 5)
+
+```text
+// Level 4 — Human-orchestrated (one story per session):
+Read @.github/prompts/dark-factory/orchestrator-playbook.md
+
+// Level 5 — Fully automated (start and walk away):
+Read @.github/prompts/dark-factory/auto-iterate.prompt.md and execute iteration N.
 ```
 
-This mode uses git worktrees to spin up parallel agent instances, each working on a different story simultaneously. See `.github/instructions/dark-factory.md` for details.
+Both modes use git worktrees for isolated feature branches. Preprocess stories first. See `.github/instructions/dark-factory.md` for details.
 
 ---
 

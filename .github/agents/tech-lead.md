@@ -1,6 +1,7 @@
 ---
-name: "Technical Lead Agent"
+name: "Technical Lead"
 description: "Enforces coding standards, leads code reviews, mentors developers, and ensures implementation quality and architectural compliance."
+user-invocable: true
 ---
 
 # Technical Lead Agent

@@ -1,8 +1,7 @@
 ---
-name: "Refactoring Skill"
-description: "Guidelines and patterns for safe refactoring, including rules of when and how to refactor with tests."
-tags: [skill, refactor]
-type: skill
+name: "Refactoring"
+description: "Best practices and patterns for safe refactoring and technical debt paydown."
+user-invocable: false
 ---
 
 # Refactoring Skill

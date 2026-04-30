@@ -1,6 +1,6 @@
 ---
 name: documentation
-description: "Documentation standards: READMEs, ADRs, docs, and API documentation."
+description: "Documentation standards — README structure, ADRs, API docs, inline comments, and changelog conventions."
 metadata:
   reference: .github/skills/documentation.md
   keywords: ["documentation","readme","adr","changelog","comments","api-docs","swagger","javadoc"]

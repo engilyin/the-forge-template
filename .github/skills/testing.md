@@ -1,8 +1,7 @@
 ---
-name: "Testing Skill"
-description: "Testing strategies and patterns for unit, integration, E2E, performance, and security testing."
-tags: [skill, testing]
-type: skill
+name: "Testing"
+description: "Testing strategies and patterns across unit, integration, and E2E layers."
+user-invocable: false
 ---
 
 # Testing Skill
@@ -18,6 +17,97 @@ type: skill
 3. **Arrange-Act-Assert (AAA)** — Structure every test as: set up context → perform action → verify outcome.
 4. **One logical assertion per test** — A test that fails should tell you exactly what broke. Multiple unrelated assertions obscure failures.
 5. **Tests are documentation** — A well-named test describes the expected behavior of the system.
+
+---
+
+## Build Setup — Gradle Source Set Suites (Java)
+
+**CRITICAL:** This project uses **Gradle source set suites**, NOT raw `testImplementation` blocks. Never add `testImplementation` dependencies directly to `build.gradle`. All test dependencies belong inside the `testing { suites { } }` block.
+
+```groovy
+// ✅ Correct — Gradle testing suites
+testing {
+    suites {
+        test {
+            useJUnitJupiter()
+            dependencies {
+              compileOnly 'org.projectlombok:lombok'
+              annotationProcessor 'org.projectlombok:lombok'
+
+              implementation 'org.mockito:mockito-junit-jupiter'
+              implementation 'org.assertj:assertj-core'
+              implementation 'org.hamcrest:hamcrest'
+              implementation 'io.projectreactor:reactor-test'
+
+              // Ensure JUnit 5 is available for the unit test suite
+              implementation 'org.junit.jupiter:junit-jupiter-api'
+              runtimeOnly   'org.junit.jupiter:junit-jupiter-engine'
+            }
+        }
+
+        integrationTest(JvmTestSuite) {
+            targets {
+              all {
+                testTask.configure {
+                  systemProperty('spring.profiles.active', 'test')
+                }
+              }
+            }
+
+
+            useJUnitJupiter()
+            sources {
+                java.srcDirs = ['src/integrationTest/java']
+                resources.srcDirs = ['src/integrationTest/resources']
+            }
+            dependencies {
+                implementation project()
+                
+                implementation sourceSets.main.runtimeClasspath
+                implementation sourceSets.test.runtimeClasspath
+
+                compileOnly 'org.projectlombok:lombok'
+                annotationProcessor 'org.projectlombok:lombok'
+
+                implementation 'org.springframework.boot:spring-boot-starter-webflux-test'
+                implementation 'org.springframework.security:spring-security-test'
+                implementation "io.rest-assured:rest-assured:${restAssuredVersion}"
+                implementation "io.rest-assured:spring-web-test-client:${restAssuredVersion}"
+                implementation "io.rest-assured:json-path:${restAssuredVersion}"
+                implementation 'io.r2dbc:r2dbc-h2'
+            }
+            sources {
+                java {
+                  srcDirs = [
+                            'src/integrationTest/java', 
+                            'src/main/java', 
+                            "$buildDir/generated/openapi/src/main/java", 
+                            "$buildDir/generated/sources/annotationProcessor/java/main"
+                          ]
+                }
+                resources {
+                  srcDirs = ['src/integrationTest/resources', 'src/main/resources']
+                }
+            }
+        }
+    }
+}
+```
+
+```groovy
+// ❌ FORBIDDEN — raw testImplementation
+testImplementation 'org.springframework.boot:spring-boot-starter-test'
+testImplementation 'org.springframework.boot:spring-boot-starter-webflux'
+```
+
+**Build sequence every story must follow:**
+```
+./gradlew openApiGenerate   # generate Java from OpenAPI spec FIRST
+# ... implement the story ...
+./gradlew spotlessApply     # format code
+./gradlew clean build       # compile + unit tests
+./gradlew integrationTest   # integration tests
+```
 
 ---
 
@@ -37,17 +127,16 @@ LoginForm_whenPasswordTooShort_showsValidationError
 
 ## Unit Testing — Java / Spring Boot
 
-### Setup
-```xml
-<!-- pom.xml — spring-boot-starter-test includes JUnit 5, Mockito, AssertJ -->
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-test</artifactId>
-    <scope>test</scope>
-</dependency>
-```
+### Rules — READ FIRST
+
+- **No Spring context in unit tests.** Unit tests use `@ExtendWith(MockitoExtension.class)` only. Never use `@SpringBootTest`, `@WebFluxTest`, `@ContextConfiguration`, or any Spring test slice annotation in a unit test.
+- **Prefer MockitoExtension style:** prefer `@Mock` + `@InjectMocks` fields with `@ExtendWith(MockitoExtension.class)` rather than manual `Mockito.mock(...)` calls. Avoid static `Mockito.mock(...)` in tests — it makes lifecycle and injection harder to reason about.
+- **Only services are unit tested.** Controllers have zero business logic and are therefore NOT unit tested. Controller behavior (validation, HTTP status mapping) is covered by integration tests.
+- **All dependencies mocked.** `@Mock` + `@InjectMocks`. No real DB, no real HTTP, no real file I/O.
+- **`StepVerifier` for reactive assertions.** Never call `.block()` in tests. Prefer `StepVerifier` for all reactive unit test assertions to keep non-blocking and deterministic behavior.
 
 ### Unit Test Pattern
+
 ```java
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -134,67 +223,12 @@ StepVerifier.create(userService.getUser("bad"))
 
 ## Integration Testing — Java / Spring Boot
 
-### Setup (Testcontainers)
-```java
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
-@ActiveProfiles("test")
-class UserControllerIT {
-
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
-    
-    @Container
-    @ServiceConnection
-    static GenericContainer<?> redis = new GenericContainer<>("redis:7-alpine")
-        .withExposedPorts(6379);
-
-    @Autowired
-    private WebTestClient webTestClient;
-    
-    @Autowired
-    private UserRepository userRepository;
-
-    @BeforeEach
-    void setUp() {
-        userRepository.deleteAll().block();
-    }
-
-    @Test
-    void POST_users_withValidRequest_returns201() {
-        var request = Map.of(
-            "email", "new@example.com",
-            "password", "SecurePass123!",
-            "firstName", "New",
-            "lastName", "User"
-        );
-
-        webTestClient.post().uri("/users")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(request)
-            .exchange()
-            .expectStatus().isCreated()
-            .expectBody()
-            .jsonPath("$.id").isNotEmpty()
-            .jsonPath("$.email").isEqualTo("new@example.com")
-            .jsonPath("$.password").doesNotExist(); // password never returned
-    }
-
-    @Test
-    void POST_users_withDuplicateEmail_returns409() {
-        // Seed existing user
-        userRepository.save(new User("existing-id", "dupe@example.com", ...)).block();
-
-        webTestClient.post().uri("/users")
-            .bodyValue(Map.of("email", "dupe@example.com", "password", "pass", ...))
-            .exchange()
-            .expectStatus().isEqualTo(HttpStatus.CONFLICT);
-    }
-}
-```
 
 ---
+
+**Notes:**
+- Controller tests that require the full application context (security, filters, global advice) should live in the `integrationTest` source set (`src/integrationTest/java`) so they run in the integration pipeline. Prefer `WebTestClient` for controller and integration tests over `MockMvc`.
+- For lightweight controller slice tests use `@WebFluxTest(controllers = ...)` and `@Import` to bring only the necessary security test config. For full-context controller tests, use `@SpringBootTest` + `@AutoConfigureWebTestClient` and place them under `src/integrationTest/java`.
 
 ## Unit Testing — React / TypeScript
 

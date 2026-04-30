@@ -1,8 +1,7 @@
 ---
-name: "React Web Frontend Quality Skill"
-description: "Quality guidance for React + TypeScript web apps: routing, state, testing, and UI architecture."
-tags: [skill, frontend, react]
-type: skill
+name: "React Web Frontend"
+description: "Quality guidance for React + TypeScript web applications."
+user-invocable: false
 ---
 
 # React Web Frontend Quality Skill
@@ -60,41 +59,77 @@ Pages and route files should stay thin. Business flow belongs in hooks and servi
 The table layer may fetch pages, virtualize rows, and prune pages outside a buffer window. That is preferable to caching every loaded page forever. For the full table architecture, read `.github/skills/react-virtualized-crud-tables.md`.
 ---
 
-### Feature module structure
+### Feature module structure and code organization
 
-Prefer a feature-module layout like this:
+Every business capability is organized as a **feature module** under `src/features/`. Entity display primitives live in `src/components/entities/`. Shared table/UI parts live in `src/components/parts/`.
 
 ```text
 src/
 ├── main.tsx
 ├── router.tsx
 ├── components/
-│   ├── ui/
-│   ├── forms/
-│   ├── pages/
-│   ├── parts/
-│   └── layout/
+│   ├── ui/               ← generic UI atoms (buttons, badges, inputs)
+│   ├── forms/            ← shared form field components
+│   ├── parts/            ← shared table/list engine parts (DataTable, DataTableActions, Toolbar, SortIcon)
+│   ├── entities/
+│   │   ├── jobs/         ← entity display components: StatusBadge, JobCard, etc.
+│   │   ├── agencies/
+│   │   └── staff/
+│   └── layout/           ← app shell, header, sidebar
 ├── features/
-│   ├── auth/
+│   ├── auth/             ← login, token handling
 │   ├── dashboard/
-│   ├── [entity]/
-│   │   ├── Module.tsx
+│   ├── jobs/
+│   │   ├── Module.tsx    ← React Router <Routes> entry for /staff/jobs/*
+│   │   ├── JobsToolbar.tsx  ← filter form for jobs list
 │   │   └── pages/
-│   └── [feature]/
+│   │       ├── index.tsx  ← jobs list page (VIS DataTable)
+│   │       ├── create.tsx
+│   │       ├── view.tsx
+│   │       └── edit.tsx
+│   ├── agencies/
+│   └── staff/
 ├── hooks/
-│   ├── [entity]/
-│   ├── [feature]/
+│   ├── jobs/
+│   │   └── useInfinite.ts   ← page fetcher for VIS DataTable
+│   ├── agencies/
 │   └── forms/
 ├── services/
-│   ├── clientApi.ts
+│   ├── clientApi.ts      ← axios clients with auth + refresh
 │   └── api/
+│       ├── jobs.ts       ← list, get, create, update, remove
+│       └── agencies.ts
 ├── store/
+│   ├── useAuthStore.ts
+│   ├── useLayoutStore.ts
+│   ├── useJobsStore.ts   ← sort, filter, pageSize for jobs list
+│   └── useAgenciesStore.ts
 ├── lib/
 ├── integrations/
 ├── styles/
 ├── types/
+│   └── jobs.ts           ← ShortJobInfo, JobRecord, JobStatus, JOB_STATUS_OPTIONS
 └── validation/
 ```
+
+### Distinction: `components/entities/` vs `features/`
+
+| Location | Contains | Example |
+|----------|----------|---------|
+| `components/entities/<entity>/` | Display primitives reusable across features | `StatusBadge`, `JobCard`, agency chip |
+| `features/<entity>/` | Route module, toolbar, page layouts for that feature | `JobsToolbar`, `pages/index.tsx` |
+
+Never put route logic in `components/entities/`. Never put reusable display atoms in `features/`.
+
+### `components/parts/` — Shared engine parts
+
+`DataTable`, `DataTableActions`, `Toolbar`, `SortIcon` live here. They are framework-level components that know nothing about any entity. Every list screen in the project uses the same `DataTable`. Copy from `acme-frontend/src/components/parts/` as the canonical source.
+
+### List screens ALWAYS use Virtual Infinite Scroll
+
+Every entity list screen MUST use the `DataTable` from `components/parts/` with the VIS `StateManager` pattern. **Never implement a paginated list (Previous/Next buttons).** The user never sees page numbers — records load seamlessly as they scroll.
+
+See `.github/skills/react-virtualized-crud-tables.md` for the complete pattern, full code skeletons, and checklist.
 
 Use shared primitives for recurring CRUD workflows instead of rebuilding list, toolbar, and form mechanics for each entity.
 
@@ -908,3 +943,137 @@ Components like a theme toggle control should be pure consumers:
 - [ ] Theme support is preserved for all new shared components
 - [ ] Accessibility and keyboard interaction are preserved
 - [ ] Vitest/RTL coverage exists for the new behavior where practical
+
+---
+
+## Project-Specific Patterns
+
+The following patterns could be useful for some prjects
+
+### API URL Resolution
+
+The portal frontend resolves backend API URLs at runtime based on the hostname. This eliminates environment-specific builds — the same `dist/` bundle works in dev, demo, and prod.
+
+```ts
+// src/config/backendApi.ts
+export function resolveApiUrl(): string {
+  const hostname = window.location.hostname
+  if (hostname.includes('acme-dev') || hostname === 'localhost') {
+    return 'https://acme-api-dev.mycompany.com'
+  }
+  if (hostname.includes('acme-demo')) {
+    return 'https://acme-api-demo.mycompany.com'
+  }
+  return 'https://acme-api.mycompany.com'
+}
+```
+
+Do not use Vite environment variables (`import.meta.env.VITE_API_URL`) for API URLs. Runtime resolution is the standard.
+
+### Token Refresh Interceptor
+
+The `staffApi` Axios instance includes a response interceptor that automatically refreshes the JWT on 401 responses. This is modeled on the ecitizen pattern:
+
+```ts
+staffApi.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true
+      const refreshToken = useAuthStore.getState().refreshToken
+      if (refreshToken) {
+        try {
+          const { data } = await tokenlessApi.post('/api/v2/public/access/refresh', { refreshToken })
+          useAuthStore.getState().setAuth(data, useAuthStore.getState().user!)
+          originalRequest.headers.Authorization = `Bearer ${data.accessToken}`
+          return staffApi(originalRequest)
+        } catch {
+          useAuthStore.getState().clearAuth()
+          window.location.href = '/login'
+        }
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+```
+
+Rules:
+- Only one retry per request (`_retry` flag)
+- On refresh failure, clear auth state and redirect to login
+- Never put refresh logic in components — it belongs in the interceptor
+
+### Role-Based Route Guards
+
+Route guards enforce access control at the routing layer using React Router loaders:
+
+```ts
+// src/lib/guards.ts
+export function requireAuth(allowedRoles: string[]) {
+  return () => {
+    const { accessToken, role } = useAuthStore.getState()
+    if (!accessToken) return redirect('/login')
+    if (allowedRoles.length > 0 && role && !allowedRoles.includes(role)) {
+      return redirect('/unauthorized')
+    }
+    return null
+  }
+}
+```
+
+Usage in router:
+```ts
+{
+  path: 'staff',
+  element: <StaffLayout />,
+  loader: requireAuth(['ADMIN', 'ROOT']),
+  children: [...]
+}
+```
+
+Rules:
+- Guards read from Zustand store (not from component state)
+- Guards return `redirect()` or `null` — never throw
+- Server-side enforcement is the source of truth; guards are a UX convenience
+
+### Error Classification
+
+Use a centralized error classifier to produce user-friendly messages:
+
+```ts
+// src/lib/errors.ts
+export enum ErrorType {
+  NETWORK = 'network',
+  SERVER = 'server',
+  VALIDATION = 'validation',
+  AUTH = 'auth',
+  UNKNOWN = 'unknown',
+}
+
+export function classifyError(error: unknown): ApiErrorInfo {
+  if (isNetworkError(error)) return { type: ErrorType.NETWORK, message: 'Unable to connect.', retryable: true }
+  if (isAxiosError(error) && error.response) {
+    const { status, data } = error.response
+    return { type: getErrorTypeFromStatus(status), message: data?.message || STATUS_MESSAGES[status], status, retryable: status >= 500 }
+  }
+  return { type: ErrorType.UNKNOWN, message: 'An unexpected error occurred', retryable: false }
+}
+```
+
+TanStack Query integrates this via the `retry` option:
+
+```ts
+new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => isRetryableError(error) && failureCount < 3,
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
+    },
+  },
+})
+```
+
+### Pre-Commit Quality Gate
+
+Every React story must pass the **React Frontend Review Checklist** (`.github/skills/react-frontend-review-checklist.md`) before committing. This is a mandatory 11-section gate — the frontend equivalent of the Java Spring Review Checklist.

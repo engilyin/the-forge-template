@@ -89,17 +89,25 @@ Before triggering Dark Factory mode, confirm the iteration plan is complete:
 - [ ] Agent assignments are made for each story
 
 ### Step 2: Trigger Dark Factory Execution
-```
-@workspace Run .github/prompts/dark-factory/run-iteration.prompt.md
+```text
+// Level 4 (human-orchestrated, one story per session):
+Read @.github/prompts/dark-factory/orchestrator-playbook.md
+
+// Level 5 (automated, start and walk away):
+Read @.github/prompts/dark-factory/auto-iterate.prompt.md and execute iteration N.
 ```
 
 Copilot will:
-1. Read the iteration plan from `spec/iterations/iteration-N/plan.md`
-2. Create a git worktree for each story
-3. Initialize each worktree on a new feature branch
-4. Execute stories in parallel (or sequentially if parallel mode is not supported)
-5. Run quality gates after each story completes
-6. Aggregate results into an iteration status report
+1. Read all iteration stories from `spec/iterations/iteration-N/` and update `state.json`
+2. Create a git worktree for each story. Implement feature stories sequentially (one LLM context per story). Make sure you have branch from the `develop` HEAD
+3. Copy gitignored secrets
+4. Assign each story to the appropriate agent role
+5. Implement story
+6. Run validation gates (build, lint, test) after each story
+7. Commit, push, and create PRs against `develop` branch automatically
+8. Merge PR to `develop` branch
+9. Continue with the next story unless you complete the iteration
+10. Present a completion iteration report for human review
 
 ### Step 3: Review the Iteration Report
 When all stories are complete (or the time-box expires), review:
@@ -124,19 +132,27 @@ The assessment includes:
 
 ## Git Worktree Commands Reference
 
-### Create a Worktree for a Story
+### Create a Worktree for a Story (preferred: use the init script)
 ```bash
-git worktree add worktrees/story-001 -b feature/STORY-001-user-authentication
+bash .forge/init-worktree.sh <project-name> <story-id> [slug]
+```
+
+### Manual worktree creation (from repo root)
+```bash
+# IMPORTANT: git -C changes CWD to solutions/<project>/, so use ../worktrees/ (NOT solutions/worktrees/)
+git -C solutions/<project-name> worktree add \
+  ../worktrees/<project-name>/<story-id> \
+  -b feature/<STORY-ID>-<slug> develop
 ```
 
 ### List Active Worktrees
 ```bash
-git worktree list
+git -C solutions/<project-name> worktree list
 ```
 
 ### Remove a Worktree After Completion
 ```bash
-git worktree remove worktrees/story-001
+git -C solutions/<project-name> worktree remove ../worktrees/<project-name>/<story-id>
 ```
 
 ### Prune Stale Worktrees

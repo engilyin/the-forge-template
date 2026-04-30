@@ -1,8 +1,7 @@
 ---
-name: "Code Review Skill"
-description: "Defines how to conduct code reviews in the FORGE template; includes checklists and principles."
-tags: [skill, code-review]
-type: skill
+name: "Code Review"
+description: "Guidance and checklists for conducting code reviews."
+user-invocable: false
 ---
 
 # Code Review Skill

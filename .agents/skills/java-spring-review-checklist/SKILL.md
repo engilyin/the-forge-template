@@ -16,4 +16,6 @@ Full reference: `.github/skills/java-spring-review-checklist.md`
 Read the full skill file before applying:
 ```
 Read @.github/skills/java-spring-review-checklist.md and run through every checklist item against the current changes.
+
+Minimize boilerplate: prefer convention over configuration where the framework can infer behavior. Specifically, avoid redundant @Column annotations when the Java field name maps reliably to the database column name.
 ```

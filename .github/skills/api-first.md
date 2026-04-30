@@ -1,8 +1,7 @@
 ---
-name: "API-First Design Skill"
-description: "Design and author OpenAPI-first REST API contracts before implementation; use for spec-first workflows and generation."
-tags: [skill, api-first]
-type: skill
+name: "API-First Design"
+description: "Guidance for designing and authoring OpenAPI-first REST contracts."
+user-invocable: false
 ---
 
 # API-First Design Skill
@@ -44,6 +43,8 @@ Before submitting any OpenAPI spec for review, verify:
 - [ ] All `paths` reference `components` for `requestBody`, responses, and parameters (no inline schemas)
 - [ ] No inline object schemas exist inside operations
 - [ ] All schemas defined under `components.schemas`
+ - [ ] Enumeration fields are modeled as separate enum schema objects (use `enum` under `components.schemas`) and referenced via `$ref` — never use `type: string` for enum fields
+ - [ ] All enumeration schema objects are defined first at the beginning of `components.schemas` (enums appear before object models)
 - [ ] Creation (POST) endpoints return `201` (or `202` for async)
 - [ ] Every operation includes a `500` response
 - [ ] Protected endpoints include `401` and `403` responses
@@ -650,4 +651,5 @@ If the spec needs to change during implementation, update `spec/technical/api-co
 - Run integration tests that assert HTTP status codes match the spec
 - Verify `Location` header is returned on all `201` responses
 - Confirm error responses return `MessageResponse`-shaped JSON
+
 - Component names MUST NOT end with 'Request' or 'Response'. Use concise names for schemas, requestBodies and responses.

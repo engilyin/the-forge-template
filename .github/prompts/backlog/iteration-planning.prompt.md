@@ -186,27 +186,25 @@ The iteration is successful when:
 
 ### Step 8: Create Individual Story Spec Files
 
-For each selected story, create `spec/iterations/iteration-[N]/stories/STORY-[ID].md`:
+For each selected story, create `spec/iterations/iteration-[N]/stories/STORY-[ID].md` using the appropriate template:
 
-```markdown
----
-id: STORY-[ID]
-title: "[Story title]"
-iteration: [N]
-phase: [1/2/3/4]
-type: [feature/technical/security/spike]
-agent: [agent-role-name]
-points: [X]
-priority: [must-have/should-have]
-dependencies: [[STORY-IDs] or []]
-status: ready
----
+- **Java backend stories:** Use `.github/templates/story-spec-java-backend.md` as the base
+- **React frontend stories:** Use `.github/templates/story-spec-react-frontend.md` as the base
+- **Phase 0 foundation:** Use `.github/templates/story-spec-phase0-foundation.md` as the base
 
-## Story
+Fill in all template placeholders with story-specific details. The story spec must be self-contained — an implementing agent should read ONLY the story spec file.
 
-**As a** [actor],
-**I want** [capability],
-**So that** [value].
+Minimum required sections in every story spec:
+- YAML front matter (id, title, iteration, phase, agent, project, points, dependencies, status)
+- `## Story` (As-a / I-want / So-that)
+- `## Context` (2-3 sentences, no external file references)
+- `## Implementation Target` (Files to Create / Files to Modify tables)
+- `## Code Skeleton` (literal code stubs per file)
+- `## Acceptance Criteria` (SC-1, SC-2, ... in Given/When/Then)
+- `## Mandatory Rules (Inline)` (10-15 rules copied from checklists — NOT referenced)
+- `## Validation Commands` (exact bash commands)
+- `## Commit Command` (exact git command)
+- `## Definition of Done` (checklist)
 
 ## Context
 
@@ -268,16 +266,50 @@ Update `spec/business/backlog.md` to mark selected stories as "In Iteration [N]"
 > **Mode:** [Dark Factory / Interactive]
 >
 > **To start development:**
-> - Dark Factory mode: Run `.github/prompts/dark-factory/run-iteration.prompt.md`
-> - Interactive mode: Run `.github/prompts/forge/04-generate.prompt.md` and start with Phase 1 stories
+> - Level 4 (human-orchestrated): Run `.github/prompts/dark-factory/orchestrator-playbook.md`
+> - Level 5 (automated): Run `.github/prompts/dark-factory/auto-iterate.prompt.md`
+> - Interactive (single story): Run `.github/prompts/forge/04-generate.prompt.md` and start with Phase 1 stories
 >
 > Ready to begin?"
 
 ## Important Rules
+
+### Sizing Constraints (STRICT)
+- **Max 8-10 stories per iteration** — larger iterations lose LLM context and produce poor results
+- **Max 25-30 story points per iteration** — budget for failures and retries
 - **Never exceed velocity by more than 10%** — Overcommitment leads to incomplete iterations
+- If the backlog has more stories than the limit, split into multiple iterations
+
+### Phase 0 Requirement (STRICT)
+- **Every iteration MUST start with a Phase 0 (Foundation) story** that handles:
+  - Entity field additions/removals needed by feature stories
+  - Flyway migration scripts
+  - OpenAPI spec updates and `openApiGenerate`
+  - Shared constants/enums
+- Phase 0 MUST be merged to `$FORGE_BASE_BRANCH` (default: `develop`) BEFORE any feature branch is created
+- Use the template: `.github/templates/story-spec-phase0-foundation.md`
+
+### Merge-Back Between Phases
+- After ALL stories in a phase complete, merge to `$FORGE_BASE_BRANCH` (`develop`) before branching next phase
+- This prevents PR conflicts between phases
+- Stories within the same phase should NOT modify the same files
+
+### Other Rules
 - **Respect dependencies** — A story cannot be started if its dependencies are not complete
 - **One story = one branch** — The story spec file is the contract for what gets built
 - **Goal must be testable** — The iteration goal should be verifiable, not vague
+- **Plan is frozen** — once approved, no stories added during execution; new work goes to next iteration
+
+### Story Spec Templates
+Use the appropriate template from `.github/templates/`:
+- `story-spec-java-backend.md` — Java/Spring Boot stories
+- `story-spec-react-frontend.md` — React/TypeScript stories
+- `story-spec-phase0-foundation.md` — Phase 0 foundation stories
+
+### Execution Mode
+- **DO NOT use `run-iteration.prompt.md`** — it is deprecated
+- Use `.github/prompts/dark-factory/orchestrator-playbook.md` for step-by-step execution
+- Each story is implemented in a FRESH Copilot session using `implement-story.prompt.md`
 - **Include a QA story** — If there's no explicit QA story, add integration testing to a Phase 4 story
 
 ## Output
@@ -286,4 +318,4 @@ When complete:
 - `spec/iterations/iteration-[N]/stories/STORY-[ID].md` (one per selected story)
 - `spec/iterations/iteration-[N]/status.md`
 - Updated `spec/business/backlog.md`
-- → Next: `.github/prompts/dark-factory/run-iteration.prompt.md` or `.github/prompts/forge/04-generate.prompt.md`
+- → Next: `.github/prompts/dark-factory/orchestrator-playbook.md` (L4) or `.github/prompts/dark-factory/auto-iterate.prompt.md` (L5)

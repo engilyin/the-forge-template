@@ -1,6 +1,7 @@
 ---
-name: "React Frontend Developer Agent"
-description: "Builds responsive, accessible web UIs with React and TypeScript; follows project frontend standards and testing patterns."
+name: "React Frontend Developer"
+description: "Implements web UIs in React/TypeScript following project standards."
+user-invocable: true
 ---
 
 # React Frontend Developer Agent

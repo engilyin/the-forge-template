@@ -43,6 +43,7 @@ Identify ALL affected artifacts. For each, state whether it needs UPDATE, DELETE
 - [ ] `spec/technical/api-contracts.md` — API change?
 - [ ] `spec/technical/architecture.md` — architecture change?
 - [ ] `spec/technical/data-model.md` — data model change?
+- [ ] `spec/technical/g2sentry-portal-api-design-decisions.md` — design decision change?
 
 **Stories:**
 - [ ] Which completed stories need rework? (create rework stories)

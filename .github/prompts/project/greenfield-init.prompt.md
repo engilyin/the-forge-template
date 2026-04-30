@@ -5,7 +5,7 @@ tools:
   - read
   - edit
   - search
-  - execute
+  - shell
   - agent
 ---
 
