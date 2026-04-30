@@ -268,9 +268,10 @@ Implement all stories in the iteration. Produce working, tested, documented code
 Stories are worked one at a time. After each story, the user reviews the output before the next story begins.
 
 #### Dark Factory Mode
-All stories in the iteration are worked in parallel using git worktrees. Each worktree is a separate branch with a dedicated agent instance. See `.github/instructions/dark-factory.md`.
+Stories are implemented sequentially per session (one story = one fresh context). Worktrees isolate each story branch. See `.github/instructions/dark-factory.md`.
 
-Run: `.github/prompts/dark-factory/run-iteration.prompt.md`
+- Level 4 (human-orchestrated): `.github/prompts/dark-factory/orchestrator-playbook.md`
+- Level 5 (automated): `.github/prompts/dark-factory/auto-iterate.prompt.md`
 
 ### Per-Story Development Workflow
 1. Agent reads story spec from `spec/iterations/iteration-N/stories/STORY-XXX.md`

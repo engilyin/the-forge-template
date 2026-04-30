@@ -156,13 +156,17 @@ The highest level of vibe coding maturity. Human involvement is reduced to setti
 - Over-reliance on automation can mask fundamental requirement errors
 
 ### FORGE Usage at Level 5
-Use `.github/prompts/dark-factory/run-iteration.prompt.md` to trigger a fully autonomous iteration. The system will:
-1. Read all iteration stories from `spec/iterations/iteration-N/`
-2. Create a git worktree for each story
-3. Assign each story to the appropriate agent role
-4. Execute all stories in parallel
-5. Run automated quality gates
-6. Present a consolidated report for human review
+Preprocess stories first, then run `.github/prompts/dark-factory/auto-iterate.prompt.md`. The system will:
+1. Read all iteration stories from `spec/iterations/iteration-N/` and update `state.json`
+2. Create a git worktree for each story. Implement feature stories sequentially (one session per story). Make sure you have branch from the `develop` HEAD
+3. Copy gitignored secrets
+4. Assign each story to the appropriate agent role
+5. Implement story
+6. Run validation gates (build, lint, test) after each story
+7. Commit, push, and create PRs against `develop` branch automatically
+8. Merge PR to `develop` branch
+9. Continue with the next story unless you complete the iteration
+10. Present a completion iteration report for human review
 
 See `.github/instructions/dark-factory.md` for full Dark Factory configuration and usage.
 

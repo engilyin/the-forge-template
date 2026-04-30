@@ -1,6 +1,6 @@
 ---
 name: testing
-description: Testing strategy and patterns (unit, integration, E2E, CI).
+description: "Testing strategy and patterns — unit, integration, E2E, test organization, mocking, coverage targets, and CI integration."
 metadata:
   reference: .github/skills/testing.md
   keywords: ["testing","test","unit-test","integration-test","e2e","coverage","jest","junit","vitest","testcontainers"]

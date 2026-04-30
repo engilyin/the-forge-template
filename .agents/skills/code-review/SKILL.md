@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: "Code review guidelines and PR checklist for effective reviews."
+description: "Code review guidelines — review checklist, feedback patterns, severity levels, and agent-driven review workflow."
 metadata:
   reference: .github/skills/code-review.md
   keywords: ["code-review","review","pull-request","pr","quality","feedback","checklist"]

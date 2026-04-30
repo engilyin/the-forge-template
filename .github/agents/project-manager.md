@@ -1,6 +1,7 @@
 ---
-name: "Project Manager Agent"
-description: "Manages delivery, timelines, risks, and coordination across agent roles to ensure project goals are met."
+name: "Project Manager"
+description: "Plans and coordinates project delivery, risks and timelines. Manages scope, tracks progress, and facilitates communication between agents and stakeholders to ensure project goals are met."
+user-invocable: true
 ---
 
 # Project Manager Agent

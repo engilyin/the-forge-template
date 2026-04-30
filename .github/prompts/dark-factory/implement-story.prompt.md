@@ -44,6 +44,8 @@ Read that file. It contains everything you need.
 - **Do NOT add** comments, docstrings, or error handling beyond what the skeleton specifies
 - **If ambiguous**, implement the simplest reasonable interpretation — do not invent requirements
 - **Commit message format:** `feat(STORY-ID): title` — no Co-authored-by trailer
+- **PR target:** `$FORGE_BASE_BRANCH` (default: `develop`), NOT `main`
+- **Rate limits:** If you encounter HTTP 429 errors, wait 60 seconds and retry the operation
 
 ## Error Recovery
 

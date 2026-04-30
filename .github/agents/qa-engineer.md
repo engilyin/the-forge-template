@@ -1,6 +1,7 @@
 ---
-name: "QA Engineer Agent"
+name: "QA Engineer"
 description: "Defines and executes test strategies, writes automated tests, and enforces quality gates across the CI/CD pipeline."
+user-invocable: true
 ---
 
 # QA Engineer Agent

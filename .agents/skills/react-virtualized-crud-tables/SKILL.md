@@ -1,6 +1,6 @@
 ---
 name: react-virtualized-crud-tables
-description: Patterns for building large virtualized CRUD data grids in React.
+description: "React virtualized CRUD tables — bounded-memory page windows, state-manager contracts, toolbar orchestration, row updates, and large-dataset pitfalls."
 metadata:
   reference: .github/skills/react-virtualized-crud-tables.md
   keywords: ["table","virtualized","crud","datagrid","pagination","infinite-scroll","tanstack-table","react","large-dataset"]

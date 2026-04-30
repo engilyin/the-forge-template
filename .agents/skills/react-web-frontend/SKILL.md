@@ -1,6 +1,6 @@
 ---
 name: react-web-frontend
-description: "React web frontend quality code — routing, API clients, forms, and design-system patterns."
+description: "React web frontend quality code — feature routing, centralized API clients, entity and CRUD patterns, forms, Zustand, and design-system consistency."
 metadata:
   reference: .github/skills/react-web-frontend.md
   keywords: ["react","typescript","frontend","web","vite","zustand","tanstack-query","forms","shadcn","tailwind","crud"]

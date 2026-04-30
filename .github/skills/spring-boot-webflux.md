@@ -1,8 +1,7 @@
 ---
-name: "Spring Boot WebFlux — Quality Code Skill"
-description: "Quality guidance for Java Spring Boot WebFlux projects: structure, reactive patterns, testing, and anti-patterns."
-tags: [skill, backend, java]
-type: skill
+name: "Spring Boot WebFlux"
+description: "Quality and architecture guidance for Spring Boot WebFlux services."
+user-invocable: false
 ---
 
 # Spring Boot WebFlux — Quality Code Skill
@@ -68,6 +67,7 @@ src/main/java/com/example/myapp/
 ### Key structural rules
 
 - One package per bounded context at the top level — never a flat `controllers/`, `services/`, `repositories/` structure across domains.
+- Minimize boilerplate: prefer convention-over-configuration when the tool/framework can infer behavior. Avoid redundant @Column annotations when the Java field name reliably maps to the database column name; prefer implicit mapping to reduce noisy boilerplate.
 - Each layer owns its own data objects. No object crosses more than one layer boundary.
 - `common/` contains only truly cross-domain utilities. If it's domain-specific, keep it in the domain package.
 - Configuration lives in `config/` — never embedded in domain packages.
@@ -103,8 +103,8 @@ Database                           3rd-party APIs · Messaging · AWS · Firebas
 | Layer | Owns | Does NOT own |
 |-------|------|-------------|
 | Controller | HTTP mapping, request record assembly, delegating to service | Business logic, validation beyond request syntax |
-| Service | Business rules, authorisation, orchestration, transactions | SQL, HTTP details, messaging details |
-| DAO | Database query execution, row mapping | Business rules, transactions |
+| Service | Business rules, orchestration, transactions — receives resolved identity and roles via request records (never perform authorization checks) | Authorization enforcement (use SecurityConfig, controller helpers such as CurrentUserController or method-level security), SQL, HTTP details, messaging details |
+| DAO | Database query execution, row mapping; owns pagination and query shaping | Business rules, transactions |
 | Remote | External HTTP calls, messaging produce/consume, 3rd-party SDK calls | Business rules, database |
 
 ### Remote / Integration Layer
@@ -140,7 +140,7 @@ public class NotificationApiClient {
     }
 }
 
-// Kafka / SQS producer
+// Kafka / SQS producer — always use SqsTemplate (Spring abstraction), never SqsAsyncClient directly
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -162,6 +162,40 @@ public class ReportEventProducer {
 - Owns its own payload models (`models/`) — never exposes SDK types or raw `Map` to the service.
 - Uses a MapStruct mapper to translate between service models and remote payloads.
 - Errors from external systems are caught here and translated into domain exceptions before propagating up.
+- **Always prefer Spring abstractions** — use `SqsTemplate` (not `SqsAsyncClient`) for SQS, `SesTemplate` for SES. Raw SDK clients are used only when the Spring abstraction does not cover a required feature.
+- **Never manually serialize/deserialize messages** — pass typed records to `SqsTemplate`; never call `objectMapper.writeValueAsString()` or `objectMapper.readValue()` in producers or listeners. Spring Cloud AWS handles serialization automatically.
+- **Claim-Check pattern for SQS messages** — send only the minimum identifier (e.g., `Long jobId`). Do NOT send full entity payloads in messages. The consumer fetches full details from the DB.
+
+### SQS Listener Pattern
+
+```java
+// SQS consumer — use @SqsListener + @Payload; never block(); never ObjectMapper
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class JobRoutingListener {
+
+    private final JobRoutingService jobRoutingService;
+
+    @SqsListener("${app.routing.queue-name}")
+    public void onRoutingEvent(@Payload JobRoutingEvent event) {
+        log.debug("Received routing event for jobId={}", event.jobId());
+        jobRoutingService
+                .route(event.jobId())
+                // Fire-and-forget: routing is async; log errors but do not rethrow
+                .subscribe(null, ex -> log.error("Routing failed for jobId={}; see stacktrace", event.jobId(), ex));
+    }
+}
+
+// Claim-check event — only the primary key
+public record JobRoutingEvent(Long jobId) {}
+```
+
+**Rules for SQS listeners:**
+- The `@Payload`-annotated parameter type must be a record matching the JSON structure. Spring + Jackson deserializes automatically.
+- **NEVER call `.block()`** even inside `@SqsListener`. Use `.subscribe(null, ex -> log.error(...))` for fire-and-forget reactive chains.
+- **NEVER inject `ObjectMapper`** to deserialize message bodies manually.
+- State-guarded repository updates: any update triggered by a queue message must include a `WHERE status IN (...)` guard and return `Mono<Integer>` (row count) so the caller can detect and log 0-row updates.
 
 ---
 
@@ -255,27 +289,80 @@ public record FindMunicipalitiesRequest(
 ### Structure
 
 - One service class per focused responsibility (SRP). Prefer small, named services over one large `MunicipalityService`.
-- Do not use interface + Impl pattern for Spring services — just a plain `@Service` class with a meaningful functional name.
+- **NEVER create a service interface.** Do NOT write `public interface EntityService` backed by `EntityServiceImpl`. This is an explicit anti-pattern in this codebase. Use a plain named `@Service` class (e.g., `EntityCreationService`). There is no circumstance where a service interface is required.
 - `@Transactional` (reactive) on write operations.
 - Resolve parallel context (roles, agency, user data) with `Mono.zip()`.
+- **Service layer knows nothing about the controller layer.** Never import classes from `controllers.*` packages or generated OpenAPI model classes (`com.mycompany.controllers.openapi.*`) into a service. Services define their own request/response records in `services.<domain>.models.*`.
+- **Service models belong in `models` subpackage** — e.g., `com.mycompany.admin.services.entities.models.CreateEntityRequest`. Not `requests/`, not the controller package.
+ - **Service models belong in `models` subpackage** — e.g., `com.mycompany.admin.services.entities.models.CreateEntityRequest`. Not `requests/`, not the controller package.
+ - **Prefer persisted fields over derived computation** — if a value exists in the DB (for example `jobs.duration`), services should use that persisted value. Do not infer or recompute persisted fields from other tables unless the spec explicitly requires it.
+ - **Use mappers to translate between layers** — service code must not manually construct service records by copying entity fields. Create a `@Mapper` in `services.<domain>.mappers` (MapStruct) and use it to map `Entity` → `ServiceModel`.
+
+### Authorization and pagination (important additions)
+
+- **Authorization must NOT live in the service layer.** Enforcement of who can call which endpoint belongs in the security layer (SecurityConfig, method-level security annotations, or controller-level guards). Controllers should assert caller identity and roles (via a shared helper like `CurrentUserController.extractUserId(ServerWebExchange)` or a `@ControllerAdvice` helper) and pass a request record containing the resolved identity/roles into the service. Services operate on resolved context and may enforce business rules based on the provided roles/identity, but must not retrieve or validate authentication tokens or JWTs directly.
+
+- **Pagination belongs in the DAO/Repository layer.** Repositories/QueryRepositories must own paging and cursor logic. Services should not call `collectList()` to implement pagination or fetch full datasets into memory — they should pass pagination parameters through to the DAO and work with the paged `Flux` returned. This prevents OOMs and keeps DB query shaping where it belongs.
+
+### Reactive patterns in service methods
+
+- **No `Mono.defer` for simple flows.** Use `.switchIfEmpty(Mono.error(...))` for duplicate/not-found checks.
+- **No imperative code inside reactive chains.** No mutable variables, no `if/else` inside `.map()` or `.flatMap()`. Extract named private methods.
+- **No useless null assignments.** Do not write `entity.setField(null)` — fields are null by default.
+
+**Correct duplicate-check pattern:**
+```java
+public Mono<EntityView> register(CreateEntityRequest request) {
+    return repository.findByEmailIgnoreCase(request.contactEmail())
+            .flatMap(existing -> Mono.<Entity>error(
+                    new DuplicateResourceException("Email already registered: " + request.contactEmail())))
+            .switchIfEmpty(Mono.fromSupplier(() -> toEntity(request))
+                    .flatMap(repository::save))
+            .map(this::toModel);
+}
+
+private Entity toEntity(CreateEntityRequest request) {
+    var entity = new Entity();
+    entity.setName(request.name());
+    entity.setEmail(request.contactEmail());
+    entity.setDisabled(false);
+    return entity;
+}
+```
+
+**❌ Anti-patterns:**
+```java
+// WRONG — unnecessary Mono.defer for a simple supplier
+return Mono.defer(() -> {
+    var entity = new Entity(); // imperative inside reactive
+    entity.setName(request.name());
+    return repository.save(entity);
+});
+
+// WRONG — creating a service interface
+public interface EntityService { Mono<EntityView> register(CreateEntityRequest r); }
+
+// WRONG — service importing controller/OpenAPI types
+import com.mycompany.controllers.openapi.admin.model.Entity; // ← illegal in service
+```
 
 ```java
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class MunicipalityCreationService {
+public class EntityCreationService {
 
-    private final MunicipalityRepository repository;
-    private final MunicipalityServiceMapper mapper;
+    private final EntityRepository repository;
+    private final EntityServiceMapper mapper;
     private final RegionResolver regionResolver;
 
     @Transactional
-    public Mono<MunicipalityView> createMunicipality(MunicipalityCreate create) {
+    public Mono<MunicipalityView> createMunicipality(EntityCreate create) {
         return regionResolver.resolveRegion(create.regionCode())
                 .map(region -> mapper.toEntity(create, region))
                 .flatMap(repository::save)
                 .map(mapper::toView)
-                .doOnSuccess(m -> log.debug("Created municipality id={}", m.id()));
+                .doOnSuccess(m -> log.debug("Created entity id={}", m.id()));
     }
 }
 ```
@@ -285,19 +372,19 @@ public class MunicipalityCreationService {
 Use `Mono.zip()` when you need results from independent reactive sources before building the DAO request:
 
 ```java
-public Flux<MunicipalityView> listMunicipalities(MunicipalitiesRequest request) {
+public Flux<MunicipalityView> listEntities(EntityRequest request) {
     return Mono.zip(
                     regionResolver.resolveRegionId(request.regionCode(), request.userId()),
                     roleService.findRoles(request.userId())
             )
-            .map(t -> FindMunicipalitiesRequest.builder()
+            .map(t -> FindEntityRequest.builder()
                     .page(request.page())
                     .filter(request.filter())
                     .resolvedRegionId(t.getT1())
                     .userRoles(t.getT2())
                     .userId(request.userId())
                     .build())
-            .flatMapMany(queryRepository::findMunicipalities)
+            .flatMapMany(queryRepository::findEntities)
             .map(mapper::toView);
 }
 ```
@@ -311,15 +398,36 @@ public Flux<MunicipalityView> listMunicipalities(MunicipalitiesRequest request) 
 Prefer `ReactiveCrudRepository` and **derived queries** (Spring Data method naming) over explicit `@Query` annotations:
 
 ```java
-public interface MunicipalityRepository extends ReactiveCrudRepository<MunicipalityEntity, Integer> {
+public interface EntityRepository extends ReactiveCrudRepository<Entity, Long> {
 
-    Mono<MunicipalityEntity> findByMunicipalityId(Integer municipalityId);
-    Flux<MunicipalityEntity> findByRegionId(Integer regionId);
-    Mono<Boolean> existsByNameAndRegionId(String name, Integer regionId);
+    Mono<Entity> findByEmailIgnoreCase(String email);
+    Mono<Boolean> existsByName(String name);
+    // findByRegionId, existsByNameAndRegionId etc.
 }
 ```
 
-For updates, use `@Modifying` + `@Query` when a derived name is unclear:
+**Prefer naming-convention methods over `@Query` whenever possible.** Use `@Query` only when a derived name cannot express the SQL needed (e.g., complex joins, aggregations):
+
+```java
+// ❌ Unnecessary @Query — naming convention handles this
+@Query("SELECT * FROM entities WHERE email = :email")
+Mono<Entity> findByEmail(@Param("email") String email);
+
+// ✅ Correct — derived method
+Mono<Entity> findByEmailIgnoreCase(String email);
+```
+
+**NEVER return unbounded `Flux<Entity>` for a collection of unknown size.** Fetching all rows without pagination can exhaust memory under load. Every collection-returning repository method must be paginated:
+
+```java
+// ❌ FORBIDDEN — no pagination; OOM risk
+Flux<PartnerEntity> findAllByOrderByNameAsc();
+
+// ✅ Required — always paginate
+Flux<PartnerEntity> findByDisabledOrderByName(boolean disabled, Pageable pageable);
+// or cursor-based:
+Flux<PartnerEntity> findByPartnerIdLessThanOrderByPartnerIdDesc(Long lastId, int limit);
+```
 
 ```java
 @Modifying
@@ -367,15 +475,33 @@ public class MunicipalityQueryRepository {
 ### DAO data objects
 
 - Return **projection records** (not entities) from queries that select a subset of columns.
-- Never return a `@Table` entity from methods that need only a few columns — use a DTO projection.
+- Never return a `@Table` entity from methods that need only a few columns — use a projection record.
 - Entities are for persistence operations (`save`, `delete`) only.
+- **Do not set default field values in entity classes.** Entity classes must not have initializers like `private boolean locked = true`. Default values belong in service logic (when building the entity to save), not in the entity class definition.
+
+```java
+// ❌ Anti-pattern — default value baked into entity
+@Table("entities")
+public class Entity {
+    private boolean locked = true; // WRONG — entities must be neutral
+}
+
+// ✅ Correct — entity is neutral; service sets defaults
+private Entity toEntity(CreateEntityRequest request) {
+    var entity = new Entity();
+    entity.setDisabled(false); // business default set in service
+    entity.setName(request.name());
+    return entity;
+}
+```
 
 ```java
 // DAO result record — only the columns the query returns
-public record MunicipalityRow(
-    Integer municipalityId,
+public record PartnerRow(
+    Long partnerId,
     String name,
-    String regionCode
+    String email,
+    boolean disabled
 ) {}
 ```
 
@@ -425,18 +551,17 @@ public interface MunicipalityServiceMapper {
 ```
 
 **❌ Service-layer mapper importing OpenAPI model classes** — this is a hard architecture violation:
-
 ```java
 // WRONG — service mapper must NOT reference API-layer classes
-package com.g2sentry.admin.services.guardians.mapper;
-import com.g2sentry.controllers.openapi.admin.model.GuardianProfile; // ← illegal cross-layer import
+package com.acme.admin.services.guardians.mapper;
+import com.acme.controllers.openapi.admin.model.GuardianProfile; // ← illegal cross-layer import
 ```
-**✅ Controller-layer mapper is the correct home for API model mapping:**
 
+**✅ Controller-layer mapper is the correct home for API model mapping:**
 ```java
 // CORRECT
-package com.g2sentry.admin.controllers.guardians.mappers;
-import com.g2sentry.controllers.openapi.admin.model.GuardianProfile; // ← allowed
+package com.acme.admin.controllers.guardians.mappers;
+import com.acme.controllers.openapi.admin.model.GuardianProfile; // ← allowed
 ```
 
 
@@ -456,7 +581,8 @@ public interface MunicipalityRowMapper {
 ### Rules
 
 - One `@Mapper` interface per layer boundary (controller→service, service→entity, entity→view, row→DTO).
-- **Never** add `@Mapping` for fields with identical names — MapStruct infers them automatically.
+- **Never** add `@Mapping` for fields with identical names — MapStruct infers them automatically. Avoid redundant `@Mapping` annotations; they add noise and risk copy-paste errors.
+- **Import annotation types** — always `import org.mapstruct.Mapping;` (and other MapStruct annotations) at the top of the file. Do **not** use fully-qualified annotation names like `@org.mapstruct.Mapping(...)` inline in code. Fully-qualified annotation usage is harder to read and hinders refactoring.
 
   ```java
   // ❌ Redundant — MapStruct already handles same-name fields
@@ -586,6 +712,8 @@ public interface EntityPatchMapper {
 }
 ```
 
+**Reference implementation:** `com.acme.admin.controllers.users.UserManagementController.patchUsersUserId` → `UpdateUserService` → `UserEntityMapper`. Study this before implementing any new PATCH endpoint.
+
 ### Service layer pattern
 
 ```java
@@ -698,6 +826,32 @@ public record FindMunicipalitiesRequest(
 
 **Naming:** Never use `DTO`, `Impl`, `I`, `Model` as suffixes or prefixes. Use domain-meaningful names that describe the shape or intent: `MunicipalityView`, `MunicipalityCreate`, `MunicipalityRow`.
 
+---
+
+### List Endpoints: Always `Flux<T>`, Never `Mono<Page<T>>`
+
+Collection-returning endpoints MUST produce `Flux<T>` — a reactive stream of items. The client starts consuming items immediately as they arrive from the database, without waiting for the full result set to materialise.
+
+```java
+// ✅ REQUIRED — streaming list
+@Override
+public Flux<AgencyShortInfo> listRootAgencies(
+        Long xAgencyId, Integer offset, Integer max, String sort,
+        String name, String state, Boolean active, ServerWebExchange exchange) {
+    int o = offset != null ? offset : 0;
+    int m = max != null ? max : DEFAULT_PAGE_SIZE;
+    return agencyService.list(name, state, active, sort, o, m)
+            .map(mapper::toShortInfo);
+}
+
+// ❌ FORBIDDEN — materialises full result, runs COUNT query
+@Override
+public Mono<AgenciesPage> listRootAgencies(...) {
+    return agencyService.list(...).map(mapper::toPage);
+}
+```
+
+In the OpenAPI spec, always use `type: array` with `items: $ref` for list responses — the generator will emit `Flux<T>` from this schema. Never use a wrapper object schema (`AgenciesPage`, `JobPage`, etc.) for a general list endpoint.
 ---
 
 ## Clean Code Principles
@@ -1233,6 +1387,7 @@ class GuardianFullMapperTest {
     void toFullProfile_includesAddresses() { ... }
 }
 ```
+
 ---
 
 ### Full context tests (use sparingly)
@@ -1321,18 +1476,17 @@ dependencyManagement {
 
 ```groovy
 dependencies {
-    compileOnly         "org.projectlombok:lombok:${lombokVersion}"
-    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    compileOnly         "org.projectlombok:lombok"
+    annotationProcessor "org.projectlombok:lombok"
+
+    annotationProcessor "org.projectlombok:lombok-mapstruct-binding:${mapstructBindingVersion}"
     annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
 
-    implementation "org.mapstruct:mapstruct:${mapstructVersion}"
     implementation 'org.springframework.boot:spring-boot-starter-webflux'    // version from BOM
     implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation 'org.flywaydb:flyway-core'
-    implementation "org.postgresql:postgresql:${postgresqlVersion}"
-    implementation "org.postgresql:r2dbc-postgresql:${r2dbcPostgresqlVersion}"
+    implementation "org.postgresql:r2dbc-postgresql"
 }
 ```
 

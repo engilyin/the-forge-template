@@ -1,6 +1,7 @@
 ---
-name: "Scrum Master Agent"
-description: "Servant-leader of the process: facilitates ceremonies, maintains backlog health, and removes process impediments."
+name: "Scrum Master"
+description: "Facilitates agile processes and team ceremonies. Maintains backlog health, and removes process impediments."
+user-invocable: true
 ---
 
 # Scrum Master Agent

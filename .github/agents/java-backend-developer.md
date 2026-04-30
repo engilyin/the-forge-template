@@ -1,6 +1,7 @@
 ---
 name: "Java Backend Developer Agent"
 description: "Implements server-side features with Java and Spring Boot (WebFlux), following API-First and reactive best practices."
+user-invocable: true
 ---
 
 # Java Backend Developer Agent

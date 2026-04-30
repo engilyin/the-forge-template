@@ -1,6 +1,6 @@
 ---
 name: refactoring
-description: Safe refactoring techniques and patterns with tests and rollout guidance.
+description: "Safe refactoring techniques — extract, rename, inline, split, and restructure patterns with test safety nets."
 metadata:
   reference: .github/skills/refactoring.md
   keywords: ["refactoring","extract","rename","inline","split","restructure","clean-code","technical-debt"]

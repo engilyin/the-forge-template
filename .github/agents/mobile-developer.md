@@ -1,6 +1,7 @@
 ---
-name: "Mobile Developer Agent"
-description: "Builds cross-platform mobile apps using Expo and React Native; prioritizes performance, accessibility, and shared logic with web."
+name: "Mobile Developer"
+description: "Builds mobile apps (Expo/React Native; prioritizes performance, accessibility, and shared logic with web."
+user-invocable: true
 ---
 
 # Mobile Developer Agent

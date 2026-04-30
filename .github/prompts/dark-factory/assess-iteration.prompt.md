@@ -261,6 +261,7 @@ Present a concise, honest assessment:
 >
 > **2. 🔧 CONDITIONAL GO — Fix specific issues first**
 >    → Tell me which issues to fix, then I'll re-validate
+>    → Use `review-story.prompt.md` to apply targeted fixes
 >
 > **3. 📦 PARTIAL RELEASE — Release passing stories, carry forward failures**
 >    → I'll merge [list of passing stories] and move [list of failing stories] to iteration [N+1]
@@ -275,15 +276,20 @@ Present a concise, honest assessment:
 
 ## Step 9: Handle User Decision
 
+> **Git Flow note:** All PRs target `$FORGE_BASE_BRANCH` (default: `develop`).
+> "Release" here means merging `develop` → `main`. This is a manual human step.
+
 ### If decision is GO (Option 1):
 ```bash
-# Merge all passing story branches
-for story in [passing stories]; do
-  git merge feature/[story-branch] --no-ff -m "merge([story-id]): [title]"
-done
+# All story PRs should already be merged to develop (base branch).
+# Release = merge develop to main:
+cd solutions/PROJECT
+git checkout main
+git merge develop --no-ff -m "release: Iteration [N] — [goal]"
 
 # Create release tag
 git tag -a v[version] -m "Release: Iteration [N] — [goal]"
+git push origin main --tags
 
 # Clean up worktrees
 git worktree prune

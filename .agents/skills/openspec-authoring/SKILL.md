@@ -1,6 +1,6 @@
 ---
 name: openspec-authoring
-description: Guidelines for writing OpenSpec specification documents and frontmatter.
+description: "Writing OpenSpec specification documents — YAML frontmatter, required sections, status lifecycle, traceability, and review conventions."
 metadata:
   reference: .github/skills/openspec-authoring.md
   keywords: ["openspec","specification","spec","yaml","requirements","documentation","frame","stories","acceptance-criteria"]

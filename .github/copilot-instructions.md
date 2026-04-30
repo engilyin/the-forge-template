@@ -111,29 +111,59 @@ To avoid accidental edits in the scaffold repository and ensure a clean separati
 
 - All implementation work MUST be done inside the project directories under `solutions/`. The root repo is a scaffolding/spec repository and should only contain specs, prompts, agents, and instructions. Do NOT add or modify source code under the root repo.
 - Clone project repositories directly into `solutions/` using their GitHub name (plain `git clone` from within the `solutions/` folder): e.g. `cd solutions && git clone <url>` produces `solutions/acme-api/`.
-- Create git worktrees for feature branches at `solutions/worktrees/<project-name>/<branch-slug>/`. Example:
+- **Branching strategy: Git Flow.** All feature branches are created from `$FORGE_BASE_BRANCH` (default: `develop`), and all PRs target `$FORGE_BASE_BRANCH`. The human releases to `main` manually at the end of an iteration. This keeps `main` stable while AI-generated code lands on `develop` for review.
+- **Creating worktrees: use the init-worktree script.** Always prefer `.forge/init-worktree.sh` which handles branch creation from the correct base, git author setup, and secret file copying in one step:
   ```bash
-  git -C solutions/acme-api worktree add ../worktrees/acme-api/feature-US-01-01-auth -b feature/US-01-01-auth main
+  bash .forge/init-worktree.sh acme-api US-01-01 auth
   ```
-IMPORTANT: Do NOT create worktrees at the repository root or at top-level paths like `C:\code\myproduct\worktrees\...`. Implementation work MUST live under `solutions/worktrees/<project-name>/` so agents and CI can locate per-project codebases. If an agent or script accidentally created top-level worktrees, remove them and recreate correctly:
+  Manual equivalent:
+  ```bash
+  git -C solutions/acme-api worktree add ../worktrees/acme-api/US-01-01 -b feature/US-01-01-auth develop
+  ```
+
+  IMPORTANT: Do NOT create worktrees at the repository root or at top-level paths like `C:\code\myproduct\worktrees\...`. Implementation work MUST live under `solutions/worktrees/<project-name>/` so agents and CI can locate per-project codebases. If an agent or script accidentally created top-level worktrees, remove them and recreate correctly:
   ```bash
   # prune stale top-level entries
   git worktree prune
 
-  # create the correct per-project worktree (example)
-  git -C solutions/<project> worktree add ../worktrees/<project>/feature/US-01-01-auth -b feature/US-01-01-auth main
+  # create the correct per-project worktree (via init script)
+  bash .forge/init-worktree.sh acme-api US-01-01 auth
   ```
 
   The Dark Factory automation and agents rely on this layout; scripts and prompts expect `solutions/worktrees/<project>/<branch>/`.
+- **`git -C` path gotcha — CRITICAL.** When using `git -C solutions/<project>`, the worktree path argument is resolved **relative to `solutions/<project>/`**, NOT the repo root. Always use `../worktrees/...` (goes up to `solutions/` then into `worktrees/`). Using `solutions/worktrees/...` with `git -C` creates the worktree at `solutions/<project>/solutions/worktrees/...` — completely wrong.
+- **Secret/config file copying is mandatory.** When creating a worktree (either via `.forge/init-worktree.sh` or manually), copy all gitignored config files listed in `FORGE_SECRET_FILES` from the main project checkout into the worktree. Default patterns: `src/main/resources/application-default.properties`, `src/main/resources/application-local.properties`, `.env`, `.env.local`, `.env.development.local`.
 - **Cross-project stories**: A single user story can touch multiple projects. Create one worktree per affected project. The story spec's `projects` field lists which repos are involved.
 - The backlog and story definitions live in `spec/iterations/...` in the root repo. Use those files as the authoritative source of truth for which stories to implement and their acceptance criteria.
 - Before starting a story, scan ALL relevant project directories under `solutions/` for any existing or partially implemented code. If code exists, update or extend it — do not re-implement functionality that already exists.
 - Parallelism rule: only run stories in parallel when they belong to the same story-group (i.e., the middle segment is identical). For example, `US-01-01`, `US-01-02` may run in parallel (same `01` group). Do NOT parallelize stories across different groups. When in doubt, complete stories with smaller last-segment numbers first (e.g., finish `US-01-01` before `US-02-01`).
 - Dependency rule: check `dependencies` in the story front-matter and `todo_deps` in the session DB before dispatching agents. Do not start a story that depends on unfinished work.
-- When creating or updating branches, prefer small, reviewable commits and open a PR in the relevant project repo for code changes. The root repo PRs should be limited to spec/iteration/backlog changes only.
+- When creating or updating branches, prefer small, reviewable commits and open a PR (targeting `$FORGE_BASE_BRANCH` / `develop`) in the relevant project repo for code changes. The root repo PRs should be limited to spec/iteration/backlog changes only.
+- Database migration files belong at the repository root under `/db/migration/` and follow Flyway naming conventions (e.g., `V3__add_owner_table.sql`). Migrations are applied by the CD pipeline — do NOT rely on application startup to run migrations locally in the scaffold repo. For schema changes affecting a specific service, create a separate worktree in the target service repository (for example `solutions/acme-api` or the relevant project) and make migration and application changes there.
 - If an accidental change to the root repo is required (rare), ask for explicit confirmation before committing.
 
 These rules will be enforced by agents when running iterations. Update this section if your team workflow differs.
+
+## Worktree initialization
+
+Before any story implementation, run the init-worktree script:
+```bash
+bash .forge/init-worktree.sh <project-name> <story-id> [slug]
+```
+
+The script (`.forge/init-worktree.sh`):
+1. Sources `.forge/config.env` for all configuration
+2. Creates the worktree from `$FORGE_BASE_BRANCH` (default: `develop`)
+3. Sets `git config user.name` / `user.email` on the worktree (from `FORGE_AUTHOR_NAME` / `FORGE_AUTHOR_EMAIL`)
+4. Copies all files matching `FORGE_SECRET_FILES` patterns from the main project checkout
+
+If `$FORGE_BASE_BRANCH` doesn't exist yet, the script creates it from `main`.
+
+For first-time setup of all projects at once, also run:
+```bash
+bash setauthor.sh
+```
+This sets git author and ensures `$FORGE_BASE_BRANCH` exists in every project under `solutions/`.
 
 ## Tooling & search guidance
 
@@ -145,7 +175,9 @@ These rules will be enforced by agents when running iterations. Update this sect
 - The glob tool in this environment may not match files inside nested repos. If a glob returns no matches, verify with `git -C solutions/<project>` or PowerShell `Get-ChildItem`.
 - When creating worktrees or branches for implementation, run commands targeting the nested repo:
   ```bash
-  git -C solutions/acme-api worktree add ../worktrees/acme-api/feature-US-01-01 -b feature/US-01-01-auth main
+  # IMPORTANT: with git -C, the worktree path is relative to the -C directory (solutions/<project>/),
+  # so use ../worktrees/ to resolve to solutions/worktrees/. NEVER use solutions/worktrees/ with git -C.
+  git -C solutions/acme-api worktree add ../worktrees/acme-api/feature-US-01-01 -b feature/US-01-01-auth develop
   ```
 - Automation and agents MUST perform a pre-check: confirm the project directory exists and `git -C solutions/<project> rev-parse --is-inside-work-tree` before assuming files are present.
 - To list all available projects: `ls solutions/` or `Get-ChildItem -Path .\solutions -Directory -Exclude worktrees`.
@@ -207,6 +239,7 @@ Run these in order for a new project:
 | 3 | `forge/03-reconstruct.prompt.md` | Resolve gaps, refine specs |
 | 4 | `forge/04-generate.prompt.md` | Generate code and infrastructure |
 | 5 | `forge/05-edit.prompt.md` | Review and polish artifacts |
+| 6 | `forge/06-amend.prompt.md` | Agile feedback — update specs when implementation reveals issues |
 
 Dark Factory execution uses these prompts (in order):
 
@@ -217,17 +250,28 @@ Dark Factory execution uses these prompts (in order):
 | 2 | `dark-factory/implement-story.prompt.md` | Implement ONE story per Copilot session (repeat per story) |
 | 3 | `dark-factory/assess-iteration.prompt.md` | Review results, produce Go/No-Go |
 | 4 | `dark-factory/auto-iterate.prompt.md` | **Level 5 — Fully automated** unattended iteration (sequential stories, parallel validation) |
+| 5 | `dark-factory/review-story.prompt.md` | Apply human review feedback to completed stories |
 
 > ⚠️ `run-iteration.prompt.md` is **DEPRECATED**. It tried to run all stories in one LLM session,
 > which causes context loss, rule-ignoring, and state confusion. Use the orchestrator playbook or auto-iterate instead.
+
+Story spec templates (use during iteration planning and preprocessing):
+
+| Template | Purpose |
+|----------|---------|
+| `.github/templates/story-spec-java-backend.md` | Java/Spring Boot story with code skeleton |
+| `.github/templates/story-spec-react-frontend.md` | React/TypeScript story with code skeleton |
+| `.github/templates/story-spec-phase0-foundation.md` | Phase 0 foundation story (entities, migrations, stubs) |
+| `.github/templates/state.json.template` | Iteration state tracking template |
 
 ## Iteration Sizing Rules
 
 - **Max 8-10 stories per iteration** — larger iterations lose context and produce poor results
 - **Max 25-30 story points per iteration** — budget for failures and retries
 - **Stories requiring spikes** must complete their spike in a prior iteration — never include unresolved spikes
-- **Phase 0 (Foundation)** — every iteration must start with a Phase 0 story that handles shared changes (entity modifications, OpenAPI updates, `openApiGenerate`, shared services). Phase 0 must be merged to main BEFORE feature branches are created.
-- **Merge-back between phases** — after completing a phase, merge all completed branches to main, then branch the next phase from the updated main. This prevents PR conflicts.
+- **Phase 0 (Foundation)** — every iteration must start with a Phase 0 story that handles shared changes (entity modifications, OpenAPI updates, `openApiGenerate`, shared services). Phase 0 must be merged to `$FORGE_BASE_BRANCH` (`develop`) BEFORE feature branches are created.
+- **Merge-back between phases** — after completing a phase, merge all completed branches to `$FORGE_BASE_BRANCH` (`develop`), then branch the next phase from the updated `develop`. This prevents PR conflicts.
+- **Release to main is manual** — at the end of an iteration (after assessment + review), the human merges `develop` → `main` to release. AI agents NEVER merge directly to `main`.
 - **Plan is frozen** — once an iteration is planned and approved, no stories may be added during execution. New work goes to the next iteration.
 
 ---
@@ -263,31 +307,74 @@ When operating in this workspace, Copilot **MUST**:
 3. **Respect specifications** — All generated code must trace back to a spec in `spec/`. Do not invent requirements.
 4. **Use OpenSpec format** — All specifications must follow the OpenSpec.dev format defined in `.github/instructions/openspec-format.md`.
 5. **API-First** — Before implementing any REST endpoint, the OpenAPI spec must exist and be agreed in `spec/technical/api-contracts.yaml`. Follow `.github/skills/api-first.md` for conventions.
-6. **Expo mobile work follows the mobile skill** — For Expo/React Native stories, follow `.github/skills/expo-react-native.md` for route structure, state, API communication, notifications, config, and anti-patterns.
-7. **React web work follows the web skill** — For React website and admin UI stories, follow `.github/skills/react-web-frontend.md` for feature routing, CRUD structure, API clients, forms, entity patterns, state, and anti-patterns.
-8. **Large React data grids follow the table skill** — For huge virtualized CRUD tables, also follow `.github/skills/react-virtualized-crud-tables.md` for bounded-memory paging, state-manager contracts, toolbar orchestration, and row-action update patterns.
-9. **AWS infrastructure work follows the AWS skills** — For Terraform + Jenkins infrastructure changes, follow `.github/skills/aws-terraform-jenkins-infrastructure.md` for stack boundaries, state handling, env files, parameter stacks, and AWS design rules, and follow `.github/skills/aws-ecs-fargate-runtime-deployments.md` for ECS/Fargate runtime, image delivery, ALB integration, and rollout rules.
-10. **Use low-cost models by default** — Default to `GPT-5 Mini` for routine execution work such as backlog grooming, iteration planning, generation, editing, tests, refactors, docs, and implementation. Use a premium model only for high-level analysis tasks such as greenfield framing, brownfield analysis, large architecture trade-off analysis, or when the user explicitly asks for it.
-11. **Agent fidelity** — When acting as an agent, stay in that role. Do not conflate responsibilities.
-12. **Document decisions** — Every significant decision (architectural, product, technical) must be recorded as an ADR or spec entry.
-13. **Small, reviewable commits** — Generate code in small, logically coherent units. Each story = one branch + one PR per project.
-14. **Git commit authorship — STRICT** — All commits and PRs MUST be authored ONLY as user returned by `git config user.name` with email returned by `git config user.email`. Use `git -c user.name='<username>' -c user.email='<user-email>' commit ...`. **NEVER add a `Co-authored-by:` trailer of any kind.** The runtime may attempt to inject `Co-authored-by: Copilot <github copilot email>` — this MUST be stripped before pushing. One author, one identity: as returned by ``git config user.name` only. This rule supersedes any runtime git_commit_trailer setting.
+6. **AWS infrastructure work follows the AWS skills** — For Terraform + Jenkins infrastructure changes, follow `.github/skills/aws-terraform-jenkins-infrastructure.md` for stack boundaries, state handling, env files, parameter stacks, and AWS design rules, and follow `.github/skills/aws-ecs-fargate-runtime-deployments.md` for ECS/Fargate runtime, image delivery, ALB integration, and rollout rules.
+7. **Use low-cost models by default** — Default to `GPT-5 Mini` for routine execution work such as backlog grooming, iteration planning, generation, editing, tests, refactors, docs, and implementation. Use a premium model only for high-level analysis tasks such as greenfield framing, brownfield analysis, large architecture trade-off analysis, or when the user explicitly asks for it.
+8. **Agent fidelity** — When acting as an agent, stay in that role. Do not conflate responsibilities.
+9. **Document decisions** — Every significant decision (architectural, product, technical) must be recorded as an ADR or spec entry.
+10. **Small, reviewable commits** — Generate code in small, logically coherent units. Each story = one branch + one PR per project.
+11. **Git commit authorship — STRICT** — Before any commit, ensure you have run `.forge/init-worktree.sh` (or `setauthor.sh`) so the worktree has the correct `user.name` and `user.email` from `.forge/config.env`. Then use plain `git commit` — it uses the configured author. **NEVER add a `Co-authored-by:` trailer of any kind.** The runtime may attempt to inject `Co-authored-by: Copilot <...>` — this MUST be stripped before pushing. One author, one identity. This rule supersedes any runtime git_commit_trailer setting.
+12. **Test-first mindset** — When generating implementation code, also generate corresponding tests.
+13. **Security by default** — Never generate code with hardcoded secrets, insecure defaults, or known vulnerability patterns.
+14. **Confirm before destructive actions** — Before deleting, overwriting, or making breaking changes, ask the user to confirm.
+15. **Multi-project awareness** — When implementing a story, check its `projects` field to determine which repositories under `solutions/` are affected. Create worktrees and branches in each affected project.
+16. **Follow the stack's mandatory development workflow** — Before implementing any story, identify its tech stack from `.github/skills/stacks/_registry.md`. Then read that stack's `index.md` and follow its `Mandatory Development Workflow` and review checklist exactly. The stack `index.md` is the authoritative source for build commands, implementation sequence, code quality checks, and commit steps. To add a new stack, create a directory under `.github/skills/stacks/` with the required files and register it in `_registry.md`.
+17. **Delete, don't comment-out** — When a file is made redundant or removed per spec, delete it with `git rm`. Never leave an empty file or a file with just a comment saying it was removed.
+18. **Rate limit awareness** — When encountering HTTP 429 rate limit errors:
+    - Wait at least 60 seconds before retrying the operation
+    - Between stories, pause `$FORGE_STORY_DELAY_SECONDS` (default: 30s) to prevent throttling
+    - Do NOT run multiple FORGE agent sessions in parallel against the same Copilot account
+    - If rate limits persist, increase `FORGE_STORY_DELAY_SECONDS` in `.forge/config.env`
+19. **Review feedback loop** — After an automated iteration, use `review-story.prompt.md` to apply human review feedback to completed stories. Do not skip review when using Level 5 Dark Factory.
 
-15. **Test-first mindset** — When generating implementation code, also generate corresponding tests.
-16. **Security by default** — Never generate code with hardcoded secrets, insecure defaults, or known vulnerability patterns.
-17. **Confirm before destructive actions** — Before deleting, overwriting, or making breaking changes, ask the user to confirm.
-18. **Multi-project awareness** — When implementing a story, check its `projects` field to determine which repositories under `solutions/` are affected. Create worktrees and branches in each affected project.
-19. **Mandatory Java story development workflow** — Every Java/Spring Boot story MUST follow this sequence without exception:
-    1. `./gradlew openApiGenerate` — generate Java classes from the OpenAPI spec BEFORE writing any implementation code
-    2. Implement the story (controller implements generated interface, service in its own class, DAO with projections)
-    3. Run the mandatory **Java Spring Review Checklist** (`.github/skills/java-spring-review-checklist.md`) — fix ALL findings before proceeding
-    4. `./gradlew spotlessApply` — format code
-    5. `./gradlew clean build` — must succeed with zero warnings/errors
-    6. `./gradlew integrationTest` — must succeed with all tests passing
-    7. Commit with `git commit -m "US-XX-XX: short commit description"` — include the story ID and commit description in the commit message. Do NOT include any `Co-authored-by` trailers.
-    8. Push and open PR with `gh pr create`
-20. **Delete, don't comment-out** — When a file is made redundant or removed per spec, delete it with `git rm`. Never leave an empty file or a file with just a comment saying it was removed.
-21. **Always import, never fully-qualify** — Never use fully-qualified class names (e.g., `com.example.SomeClass`) inline in code when an `import` statement is available. The only exception is when two classes share the same simple name and disambiguation is required.
+---
+
+## Branching Strategy — Git Flow
+
+This scaffold uses **Git Flow** for AI-assisted development:
+
+```
+main          ─────────────────────────●────── (stable releases)
+                                       ↑
+                                  merge (human)
+                                       ↑
+develop       ───●──●──●──●──●──●──●──● (AI merges PRs here)
+                 ↑  ↑                  ↑
+              feature/US-01-01    feature/US-01-02
+```
+
+| Branch | Purpose | Who merges |
+|--------|---------|------------|
+| `main` | Stable releases only | **Human** — manual merge from `develop` |
+| `develop` | Integration branch — all AI PRs land here | **AI / Automation** |
+| `feature/*` | Story implementation branches | **AI** — merged to `develop` after validation |
+
+Configured via `FORGE_BASE_BRANCH` in `.forge/config.env` (default: `develop`).
+Set to `main` to revert to trunk-based development.
+
+---
+
+## Pluggable Tech Stack System
+
+Tech stack skills are organized under `.github/skills/stacks/`. Each stack is a self-contained
+directory with patterns, review checklists, and story templates.
+
+See `.github/skills/stacks/_registry.md` for:
+- Active stacks and their directories
+- How to add or remove a tech stack
+- File structure conventions
+
+| Stack | Directory | Agent |
+|-------|-----------|-------|
+| Java / Spring Boot / WebFlux | `.github/skills/stacks/java-spring-webflux/` | `java-backend-developer` |
+| React / TypeScript (Web) | `.github/skills/stacks/react-web/` | `react-frontend-developer` |
+| Expo / React Native (Mobile) | `.github/skills/stacks/expo-react-native/` | `mobile-developer` |
+
+Each stack directory contains an `index.md` with build commands, workflow steps, and pointers
+to the skill files. As skills grow, they are split into focused aspect files (e.g., `patterns-forms.md`,
+`patterns-testing.md`) within the stack directory.
+
+The existing flat skill files (`.github/skills/*.md`) remain as the canonical content source.
+Stack index files reference them. Over time, large files will be decomposed into the stack directory.
 
 ---
 
@@ -301,11 +388,16 @@ When operating in this workspace, Copilot **MUST**:
 | `.github/instructions/dark-factory.md` | StrongDM Dark Factory model |
 | `.github/instructions/openspec-format.md` | OpenSpec.dev specification format |
 | `spec/README.md` | Spec folder structure guide |
+| `spec/technical/acme-api-design-decisions.md` | **Mandatory** project-specific design decisions for `acme-api` — mapper inheritance, pagination naming, avatar URLs, HTTP status codes, OpenAPI conventions |
+| `.github/skills/stacks/_registry.md` | Tech stack registry — active stacks, how to add/remove |
+| `.forge/config.env.example` | FORGE configuration reference — author, branching, secrets, rate limits |
+| `.forge/init-worktree.sh` | Worktree initialization script — creates branch, sets author, copies secrets |
 
 ## Skills Available
 
-Skills are available in two formats:
+Skills are available in three formats:
 - **Full reference:** `.github/skills/<name>.md` — detailed patterns, anti-patterns, and examples
+- **Stack index:** `.github/skills/stacks/<stack>/index.md` — stack-specific entry point with build commands and workflow
 - **Copilot CLI discovery:** `.agents/skills/<name>/SKILL.md` — thin wrappers for `/skills reload` and `/skills list`
 
 | Skill | Purpose |
@@ -315,6 +407,7 @@ Skills are available in two formats:
 | `.github/skills/java-spring-review-checklist.md` | **Mandatory** Java/Spring pre-commit review checklist — 11-section gate covering API-First, layer separation, MapStruct, testing, build verification, commit rules; MUST pass before every commit |
 | `.github/skills/expo-react-native.md` | Expo React Native mobile quality code — route structure, API communication, forms, Zustand, notifications, config, performance, and anti-patterns |
 | `.github/skills/react-web-frontend.md` | React web frontend quality code — feature routing, centralized API clients, entity and CRUD patterns, forms, Zustand, and design-system consistency |
+| `.github/skills/react-frontend-review-checklist.md` | **Mandatory** React/TypeScript pre-commit review checklist — 11-section gate covering project structure, API isolation, state management, forms, TypeScript strictness, build verification, commit rules; MUST pass before every commit |
 | `.github/skills/react-virtualized-crud-tables.md` | React virtualized CRUD tables — bounded-memory page windows, state-manager contracts, toolbar orchestration, row updates, and large-dataset pitfalls |
 | `.github/skills/aws-terraform-jenkins-infrastructure.md` | AWS infrastructure provisioning — Terraform stack boundaries, Jenkins pipelines, S3 state, env tfvars, Parameter Store, and AWS design guidance |
 | `.github/skills/aws-ecs-fargate-runtime-deployments.md` | AWS runtime and deployment patterns — ECS/Fargate services, task definitions, ALB integration, image publishing, EFS usage, and rollout guidance |

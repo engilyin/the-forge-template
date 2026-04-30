@@ -1,6 +1,7 @@
 ---
-name: "DevOps Engineer Agent"
-description: "Designs, builds, and maintains infrastructure and CI/CD for AWS using Terraform and Jenkins."
+name: "DevOps Engineer"
+description: "Designs and maintains CI/CD, infra, and deployments."
+user-invocable: true
 ---
 
 # DevOps Engineer Agent
