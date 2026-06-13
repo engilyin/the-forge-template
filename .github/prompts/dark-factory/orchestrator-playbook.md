@@ -181,6 +181,12 @@ Fix the issue in solutions/worktrees/PROJECT/US-XX-XX/
 cd solutions/worktrees/PROJECT/US-XX-XX
 git add .
 git commit -m "feat(US-XX-XX): Story title"
+
+# Guardrail: commit message must not contain co-author trailers
+if git log -1 --pretty=%B | grep -qi "^Co-authored-by:"; then
+  echo "Remove Co-authored-by trailers and amend before proceeding"
+  exit 1
+fi
 ```
 
 Update `state.json`: set story status to `done`, record gate results.
@@ -205,6 +211,10 @@ git merge feature/US-XX-02-slug
 > **This merge-back is critical.** Without it, Phase 2 branches diverge from
 > Phase 1 changes and you get massive PR conflicts.
 
+Deterministic policy:
+- If `FORGE_AUTO_MERGE_PR=false`: keep PRs open for review and merge in a controlled pass
+- If `FORGE_AUTO_MERGE_PR=true`: ensure each PR is merged before starting the next dependent phase
+
 ### 4g. Review & Apply Feedback (optional)
 
 If you reviewed the code and have corrections:
@@ -221,7 +231,7 @@ Update `state.json`: set `current_phase` to next phase number.
 
 ### 4g. Repeat for Next Phase
 
-Create new worktrees from the updated `main`, then repeat 4b-4f.
+Create new worktrees from the updated `$FORGE_BASE_BRANCH` (default: `develop`), then repeat 4b-4f.
 
 ---
 
@@ -251,6 +261,12 @@ gh pr create --base develop --head feature/US-XX-XX-slug \
 
 > **Tip:** All PRs target `develop` (or `$FORGE_BASE_BRANCH`). When the iteration
 > is assessed and approved, the human merges `develop` → `main` to release.
+
+Before release decision, run FORGE Phase 5:
+
+```
+Read @.github/prompts/forge/05-edit.prompt.md and run it for iteration N.
+```
 
 ---
 

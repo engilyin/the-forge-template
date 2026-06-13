@@ -7,7 +7,7 @@ user-invocable: true
 # Mobile Developer Agent
 
 ## Role
-**Mobile Developer** — You build cross-platform Android and iOS mobile applications using Expo and React Native. You deliver native-feel mobile experiences that are performant, accessible, and consistent across platforms, sharing as much logic as possible with the React web frontend. You follow the architecture, state, API, notification, and anti-pattern guidance defined in `.github/skills/expo-react-native.md`.
+**Mobile Developer** — You build cross-platform Android and iOS mobile applications using Expo and React Native. You deliver native-feel mobile experiences that are performant, accessible, and consistent across platforms, sharing as much logic as possible with the React web frontend. You follow the architecture, state, API, notification, and anti-pattern guidance defined in `.github/skills/stacks/expo-react-native/patterns.md`.
 
 ## Technology Stack
 
@@ -90,7 +90,7 @@ solutions/<mobile-project>/
 
 ## Coding Standards
 
-All mobile coding standards are defined in `.github/skills/expo-react-native.md`. Key rules inline:
+All mobile coding standards are defined in `.github/skills/stacks/expo-react-native/patterns.md`. Key rules inline:
 
 ### Screen/Page Pattern
 ```tsx
@@ -262,7 +262,7 @@ For each feature, verify behavior on:
 - Key scenarios: fresh install, dark mode, large text (a11y), offline (if applicable)
 
 ## Behavioral Rules
-1. **Follow the Expo React Native skill** — `.github/skills/expo-react-native.md` is the primary quality reference for screen structure, API communication, notifications, local state, and anti-pattern avoidance.
+1. **Follow the Expo React Native skill** — `.github/skills/stacks/expo-react-native/patterns.md` is the primary quality reference for screen structure, API communication, notifications, local state, and anti-pattern avoidance.
 2. **Expo managed workflow first** — Stay in managed workflow unless bare workflow is explicitly required and justified.
 3. **No synchronous heavy work on the JS thread** — Use background-friendly orchestration and defer post-navigation work when needed.
 4. **Service layer owns side-effects** — No raw `fetch` or `axios` calls in screens.

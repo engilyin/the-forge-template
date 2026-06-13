@@ -172,18 +172,19 @@ the-forge-template/
 │   │   └── qa-engineer.md
 │   │
 │   └── skills/                ← Reusable skill definitions
-│       ├── api-first.md
-│       ├── spring-boot-webflux.md
-│       ├── expo-react-native.md
-│       ├── react-web-frontend.md
-│       ├── react-virtualized-crud-tables.md
-│       ├── aws-terraform-jenkins-infrastructure.md
-│       ├── aws-ecs-fargate-runtime-deployments.md
-│       ├── code-review.md
-│       ├── refactoring.md
-│       ├── testing.md
-│       ├── documentation.md
-│       └── openspec-authoring.md
+│       ├── catalog.yaml
+│       ├── stacks/
+│       │   ├── _registry.md
+│       │   ├── java-spring-webflux/
+│       │   ├── react-web/
+│       │   └── expo-react-native/
+│       └── domains/
+│           ├── _registry.md
+│           ├── api-design/
+│           ├── spec-authoring/
+│           ├── quality-engineering/
+│           ├── documentation-aac-structurizr/
+│           └── aws-platform/
 │
 ├── spec/                      ← All project specifications (OpenSpec format)
 │   ├── README.md              ← Spec folder guide
@@ -444,14 +445,14 @@ type: business
 ```
 
 → Full format guide: [`.github/instructions/openspec-format.md`](.github/instructions/openspec-format.md)
-→ Authoring skill: [`.github/skills/openspec-authoring.md`](.github/skills/openspec-authoring.md)
-→ API-First skill: [`.github/skills/api-first.md`](.github/skills/api-first.md)
-→ Spring Boot WebFlux quality skill: [`.github/skills/spring-boot-webflux.md`](.github/skills/spring-boot-webflux.md)
-→ Expo React Native quality skill: [`.github/skills/expo-react-native.md`](.github/skills/expo-react-native.md)
-→ React web frontend quality skill: [`.github/skills/react-web-frontend.md`](.github/skills/react-web-frontend.md)
-→ React virtualized CRUD tables skill: [`.github/skills/react-virtualized-crud-tables.md`](.github/skills/react-virtualized-crud-tables.md)
-→ AWS Terraform Jenkins infrastructure skill: [`.github/skills/aws-terraform-jenkins-infrastructure.md`](.github/skills/aws-terraform-jenkins-infrastructure.md)
-→ AWS ECS/Fargate runtime and deployments skill: [`.github/skills/aws-ecs-fargate-runtime-deployments.md`](.github/skills/aws-ecs-fargate-runtime-deployments.md)
+→ Authoring skill: [`.github/skills/domains/spec-authoring/openspec-authoring.md`](.github/skills/domains/spec-authoring/openspec-authoring.md)
+→ API-First skill: [`.github/skills/domains/api-design/api-first.md`](.github/skills/domains/api-design/api-first.md)
+→ Spring Boot WebFlux quality skill: [`.github/skills/stacks/java-spring-webflux/patterns.md`](.github/skills/stacks/java-spring-webflux/patterns.md)
+→ Expo React Native quality skill: [`.github/skills/stacks/expo-react-native/patterns.md`](.github/skills/stacks/expo-react-native/patterns.md)
+→ React web frontend quality skill: [`.github/skills/stacks/react-web/patterns.md`](.github/skills/stacks/react-web/patterns.md)
+→ React virtualized CRUD tables skill: [`.github/skills/stacks/react-web/virtualized-tables.md`](.github/skills/stacks/react-web/virtualized-tables.md)
+→ AWS Terraform Jenkins infrastructure skill: [`.github/skills/domains/aws-platform/aws-terraform-jenkins-infrastructure.md`](.github/skills/domains/aws-platform/aws-terraform-jenkins-infrastructure.md)
+→ AWS ECS/Fargate runtime and deployments skill: [`.github/skills/domains/aws-platform/aws-ecs-fargate-runtime-deployments.md`](.github/skills/domains/aws-platform/aws-ecs-fargate-runtime-deployments.md)
 → Spec folder guide: [`spec/README.md`](spec/README.md)
 
 ---

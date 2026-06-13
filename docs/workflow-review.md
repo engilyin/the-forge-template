@@ -17,6 +17,7 @@
 
 ```
 Fleet finishes → /tasks shows completion
+  → Run forge/05-edit.prompt.md
   → Open VS Code (code .)
     → Review diffs + run tests
       → Approve OR leave feedback

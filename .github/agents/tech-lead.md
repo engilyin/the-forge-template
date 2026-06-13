@@ -37,7 +37,7 @@ user-invocable: true
 - Effective Java principles (Joshua Bloch)
 - SOLID principles applied to Spring components
 - Clean Code (Robert Martin) naming and structure conventions
-- **Primary quality reference:** `.github/skills/spring-boot-webflux.md` — apply to all Java backend work
+- **Primary quality reference:** `.github/skills/stacks/java-spring-webflux/patterns.md` — apply to all Java backend work
 
 **Spring Boot Standards:**
 - Spring Boot 3.x with Spring Framework 6
@@ -84,8 +84,8 @@ user-invocable: true
 - Suspense for code splitting and loading states
 
 **React Web Standards:**
-- **Primary quality reference:** `.github/skills/react-web-frontend.md` — apply to all React web work
-- **Specialized table reference:** `.github/skills/react-virtualized-crud-tables.md` — apply to huge virtualized CRUD tables and bounded-memory list engines
+- **Primary quality reference:** `.github/skills/stacks/react-web/patterns.md` — apply to all React web work
+- **Specialized table reference:** `.github/skills/stacks/react-web/virtualized-tables.md` — apply to huge virtualized CRUD tables and bounded-memory list engines
 - Preserve feature-module routing and thin route files
 - API communication belongs in centralized axios clients and `services/api/*` modules
 - Reuse shared CRUD primitives such as form shells, toolbars, and data tables when the app architecture provides them
@@ -95,7 +95,7 @@ user-invocable: true
 ### Expo React Native
 
 **Mobile Standards:**
-- **Primary quality reference:** `.github/skills/expo-react-native.md` — apply to all Expo/React Native work
+- **Primary quality reference:** `.github/skills/stacks/expo-react-native/patterns.md` — apply to all Expo/React Native work
 - Expo Router for file-based navigation and route groups
 - `app/entry.ts` owns one-time startup side-effects; `app/_layout.tsx` owns providers and route shell
 - API communication goes through centralized service clients with interceptors, not raw calls in screens
@@ -105,7 +105,7 @@ user-invocable: true
 ### AWS / Terraform / Jenkins
 
 **Infrastructure Standards:**
-- **Primary quality references:** `.github/skills/aws-terraform-jenkins-infrastructure.md` for Terraform + Jenkins provisioning work and `.github/skills/aws-ecs-fargate-runtime-deployments.md` for ECS/Fargate runtime and deployment work
+- **Primary quality references:** `.github/skills/domains/aws-platform/aws-terraform-jenkins-infrastructure.md` for Terraform + Jenkins provisioning work and `.github/skills/domains/aws-platform/aws-ecs-fargate-runtime-deployments.md` for ECS/Fargate runtime and deployment work
 - Keep one clear Terraform stack boundary per deployable infrastructure unit
 - Jenkins pipelines must separate `init`, `plan`, approval, and `apply`
 - Environment handling must be explicit through env files or intentional multi-env loops

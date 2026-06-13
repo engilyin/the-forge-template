@@ -1,0 +1,43 @@
+version: 1
+
+stacks:
+  - id: java-spring-webflux
+    path: .github/skills/stacks/java-spring-webflux/patterns.md
+    agent: java-backend-developer
+    domains:
+      - api-design
+      - spec-authoring
+      - quality-engineering
+  - id: react-web
+    path: .github/skills/stacks/react-web/patterns.md
+    agent: react-frontend-developer
+    domains:
+      - api-design
+      - spec-authoring
+      - quality-engineering
+  - id: expo-react-native
+    path: .github/skills/stacks/expo-react-native/patterns.md
+    agent: mobile-developer
+    domains:
+      - spec-authoring
+      - quality-engineering
+
+domains:
+  - id: api-design
+    path: .github/skills/domains/api-design/api-first.md
+  - id: spec-authoring
+    path: .github/skills/domains/spec-authoring/openspec-authoring.md
+  - id: quality-engineering
+    path: .github/skills/domains/quality-engineering/testing.md
+    files:
+      - .github/skills/domains/quality-engineering/code-review.md
+      - .github/skills/domains/quality-engineering/refactoring.md
+  - id: documentation-aac-structurizr
+    path: .github/skills/domains/documentation-aac-structurizr/documentation.md
+    files:
+      - .github/skills/domains/documentation-aac-structurizr/documentation.md
+      - .github/skills/domains/documentation-aac-structurizr/architecture-as-code-structurizr.md
+  - id: aws-platform
+    path: .github/skills/domains/aws-platform/aws-terraform-jenkins-infrastructure.md
+    files:
+      - .github/skills/domains/aws-platform/aws-ecs-fargate-runtime-deployments.md

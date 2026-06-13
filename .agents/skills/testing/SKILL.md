@@ -2,7 +2,7 @@
 name: testing
 description: "Testing strategy and patterns — unit, integration, E2E, test organization, mocking, coverage targets, and CI integration."
 metadata:
-  reference: .github/skills/testing.md
+  reference: .github/skills/domains/quality-engineering/testing.md
   keywords: ["testing","test","unit-test","integration-test","e2e","coverage","jest","junit","vitest","testcontainers"]
 ---
 
@@ -12,9 +12,9 @@ Testing strategy and patterns — unit, integration, E2E, test organization, moc
 
 Keywords: testing, test, unit-test, integration-test, e2e, coverage, jest, junit, vitest, testcontainers
 
-Full reference: `.github/skills/testing.md`
+Full reference: `.github/skills/domains/quality-engineering/testing.md`
 
 Read the full skill file before applying:
 ```
-Read @.github/skills/testing.md and apply it when writing or reviewing tests.
+Read @.github/skills/domains/quality-engineering/testing.md and apply it when writing or reviewing tests.
 ```

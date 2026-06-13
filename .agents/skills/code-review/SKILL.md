@@ -2,7 +2,7 @@
 name: code-review
 description: "Code review guidelines — review checklist, feedback patterns, severity levels, and agent-driven review workflow."
 metadata:
-  reference: .github/skills/code-review.md
+  reference: .github/skills/domains/quality-engineering/code-review.md
   keywords: ["code-review","review","pull-request","pr","quality","feedback","checklist"]
 ---
 
@@ -12,9 +12,9 @@ Code review guidelines — review checklist, feedback patterns, severity levels,
 
 Keywords: code-review, review, pull-request, pr, quality, feedback, checklist
 
-Full reference: `.github/skills/code-review.md`
+Full reference: `.github/skills/domains/quality-engineering/code-review.md`
 
 Read the full skill file before applying:
 ```
-Read @.github/skills/code-review.md and apply it when reviewing code or PRs.
+Read @.github/skills/domains/quality-engineering/code-review.md and apply it when reviewing code or PRs.
 ```

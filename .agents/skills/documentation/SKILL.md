@@ -2,7 +2,7 @@
 name: documentation
 description: "Documentation standards — README structure, ADRs, API docs, inline comments, and changelog conventions."
 metadata:
-  reference: .github/skills/documentation.md
+  reference: .github/skills/domains/documentation-aac-structurizr/documentation.md
   keywords: ["documentation","readme","adr","changelog","comments","api-docs","swagger","javadoc"]
 ---
 
@@ -12,9 +12,9 @@ Documentation standards — README structure, ADRs, API docs, inline comments, a
 
 Keywords: documentation, readme, adr, changelog, comments, api-docs, swagger, javadoc
 
-Full reference: `.github/skills/documentation.md`
+Full reference: `.github/skills/domains/documentation-aac-structurizr/documentation.md`
 
 Read the full skill file before applying:
 ```
-Read @.github/skills/documentation.md and apply it when writing or reviewing documentation.
+Read @.github/skills/domains/documentation-aac-structurizr/documentation.md and apply it when writing or reviewing documentation.
 ```

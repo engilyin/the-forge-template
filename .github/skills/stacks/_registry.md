@@ -1,8 +1,8 @@
 # Tech Stack Registry
 
-> **This file lists all active tech stacks** supported by this FORGE scaffold.
+> **This file lists all active implementation tech stacks** supported by this FORGE scaffold.
 > Agents, prompts, and preprocessing use this registry to determine which
-> skills, checklists, templates, and patterns apply to each project.
+> stack-local workflow/checklist/template files apply to each project.
 
 ---
 
@@ -13,24 +13,35 @@ A stack directory contains:
 
 | File | Purpose | Required |
 |------|---------|----------|
-| `index.md` | Stack overview, file layout, build/validation commands, **Mandatory Development Workflow** | ✅ Yes |
 | `patterns.md` | Code patterns, conventions, anti-patterns | ✅ Yes |
 | `review-checklist.md` | Pre-commit mandatory review checklist | ✅ Yes |
 | `story-template.md` | Story spec template with code skeletons | ✅ Yes |
 | `*.md` (additional) | Supplementary aspect files (e.g., `virtualized-tables.md`) | Optional |
 
-> **Contract:** Every `index.md` MUST contain a `## Mandatory Development Workflow` section.
-> This is the authoritative step-by-step sequence Copilot follows for every story of that stack.
-> The generic rule in `copilot-instructions.md` (rule 16) delegates all stack-specific workflow
-> and checklist details to this section. When adding a new stack, this section is required.
-
-When a stack grows too large, **split aspect files** from `patterns.md`:
+When a stack grows too large, split aspect files from `patterns.md`:
 - `patterns-reactive.md` — reactive/async patterns
 - `patterns-mappers.md` — mapper conventions
 - `patterns-testing.md` — testing patterns
 - `patterns-forms.md` — form handling
 
-The `index.md` file in each stack directory serves as the entry point and lists all files in that stack.
+Shared knowledge that applies across stacks (API design, spec authoring, testing strategy,
+documentation, architecture as code) belongs in `.github/skills/domains/`.
+
+## Stack vs Domain Rule
+
+- Use a **stack** for runtime/framework-specific implementation workflow.
+- Use a **domain** for reusable knowledge that can be consumed by multiple stacks.
+- Stack canonical files (`patterns.md`, `review-checklist.md`, `story-template.md`) should link to applicable domain skills.
+
+## Cross-Tool Compatibility
+
+To keep stack skills loadable across VS Code GitHub Copilot addon, Copilot CLI, and Claude Code workflows:
+
+- Use repository-relative paths (no editor-specific URI schemes)
+- Keep the required stack files present in every stack directory
+- Keep `.agents/skills/*/SKILL.md` wrappers pointing to canonical files in `.github/skills/`
+- Keep prompt references stable (`.github/skills/stacks/<stack>/patterns.md` and `review-checklist.md`)
+- Keep `.github/skills/catalog.yaml` in sync with stack/domain registries
 
 ---
 
@@ -42,50 +53,22 @@ The `index.md` file in each stack directory serves as the entry point and lists 
 | React / TypeScript (Web) | `react-web/` | `react-frontend-developer` | `g2sentry-ecitizen` |
 | Expo / React Native (Mobile) | `expo-react-native/` | `mobile-developer` | `citizen-police-report`, `g2sentry-guardian` |
 
+## Shared Domains Referenced By Stacks
+
+Use `.github/skills/domains/_registry.md` as the source for cross-stack capabilities.
+
 ---
 
 ## Adding a New Tech Stack
 
 1. Create directory: `.github/skills/stacks/<stack-name>/`
-2. Create required files: `index.md`, `patterns.md`, `review-checklist.md`, `story-template.md`
+2. Create required files: `patterns.md`, `review-checklist.md`, `story-template.md`
 3. Add the stack to the **Active Stacks** table above
-4. Create an agent in `.github/agents/` (if one doesn't exist)
-5. Create a CLI skill wrapper in `.agents/skills/<stack-name>/SKILL.md`
-6. Update `copilot-instructions.md` rules section to reference the new stack
-
-### Template for `index.md`
-
-```markdown
-# [Stack Name] — Tech Stack Index
-
-## Overview
-[1-2 sentence description]
-
-## Stack Files
-| File | Purpose |
-|------|---------|
-| `patterns.md` | ... |
-| `review-checklist.md` | ... |
-| `story-template.md` | ... |
-
-## Build & Validation Commands
-[commands]
-
-## Mandatory Development Workflow
-
-1. [Step 1 — e.g., install deps / code generation]
-2. Implement the story following `patterns.md`
-3. Run review checklist (`review-checklist.md`) — fix ALL findings
-4. [Format command]
-5. [Lint/type-check commands] — must pass with zero errors
-6. [Build command] — must succeed
-7. [Test command] — must pass
-8. Commit with `git commit` (author set by `.forge/init-worktree.sh`)
-9. Push and open PR with `gh pr create --base $FORGE_BASE_BRANCH`
-
-## Agent
-`[agent-name]`
-```
+4. Reference applicable domains from `.github/skills/domains/_registry.md` in stack files directly
+5. Create an agent in `.github/agents/` (if one doesn't exist)
+6. Create a CLI skill wrapper in `.agents/skills/<stack-name>/SKILL.md`
+7. Update `.github/skills/catalog.yaml`
+8. Update `copilot-instructions.md` rules section to reference the new stack when needed
 
 ---
 
@@ -93,4 +76,5 @@ The `index.md` file in each stack directory serves as the entry point and lists 
 
 1. Remove the directory from `.github/skills/stacks/`
 2. Remove from the **Active Stacks** table above
-3. Optionally remove the agent and CLI skill wrapper
+3. Remove it from `.github/skills/catalog.yaml`
+4. Optionally remove the agent and CLI skill wrapper

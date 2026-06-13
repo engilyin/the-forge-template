@@ -119,7 +119,7 @@ Extract: acceptance criteria, technical notes, dependencies confirmed.
 **Step 4: Implement**
 Working in `worktrees/[story-id]/`:
 - Implement the feature per the story spec and agent role guidelines
-- Write unit tests (per `.github/skills/testing.md`)
+- Write unit tests (per `.github/skills/domains/quality-engineering/testing.md`)
 - Follow coding standards from the agent definition
 
 **Step 5: Run Quality Gates**

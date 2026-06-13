@@ -91,7 +91,7 @@ authors:
 - `## Open Questions` — Unresolved items with owners
 
 For the full format reference: `.github/instructions/openspec-format.md`
-For authoring guidance: `.github/skills/openspec-authoring.md`
+For authoring guidance: `.github/skills/domains/spec-authoring/openspec-authoring.md`
 
 ---
 

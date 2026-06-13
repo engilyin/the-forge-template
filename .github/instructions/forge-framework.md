@@ -13,6 +13,21 @@ FORGE is a structured methodology that transforms the "vibe coding" instinct int
 
 The five phases are **sequential but iterative** — you can return to earlier phases as new information surfaces, just as in agile development. The key insight is that **AI agents are most effective when given precise, structured context**, and FORGE exists to produce exactly that context.
 
+## Pluggable Skills Topology
+
+FORGE uses a two-layer skill model:
+
+- **Stacks** (`.github/skills/stacks/`): implementation workflows tied to concrete runtimes/frameworks (for example Java WebFlux, React Web, Expo mobile).
+- **Domains** (`.github/skills/domains/`): reusable cross-stack capabilities (for example API design, OpenSpec authoring, testing strategy, documentation, Architecture as Code).
+
+Registries:
+
+- `.github/skills/stacks/_registry.md`
+- `.github/skills/domains/_registry.md`
+- `.github/skills/catalog.yaml` (machine-readable mapping for automation)
+
+This keeps stack folders small while making shared knowledge discoverable and pluggable for new capability packs.
+
 ---
 
 ## Phase 1: FRAME

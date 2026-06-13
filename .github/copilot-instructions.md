@@ -248,9 +248,12 @@ Dark Factory execution uses these prompts (in order):
 | 0 | `dark-factory/orchestrator-playbook.md` | **START HERE** — Human-driven step-by-step execution checklist |
 | 1 | `dark-factory/preprocess-iteration.prompt.md` | Generate self-contained story specs with code skeletons and inline rules |
 | 2 | `dark-factory/implement-story.prompt.md` | Implement ONE story per Copilot session (repeat per story) |
-| 3 | `dark-factory/assess-iteration.prompt.md` | Review results, produce Go/No-Go |
-| 4 | `dark-factory/auto-iterate.prompt.md` | **Level 5 — Fully automated** unattended iteration (sequential stories, parallel validation) |
-| 5 | `dark-factory/review-story.prompt.md` | Apply human review feedback to completed stories |
+| 3 | `forge/05-edit.prompt.md` | **Mandatory quality hardening gate** before release assessment |
+| 4 | `dark-factory/assess-iteration.prompt.md` | Review results, produce Go/No-Go |
+| 5 | `dark-factory/auto-iterate.prompt.md` | **Level 5 — Fully automated** unattended iteration (sequential stories, parallel validation) |
+| 6 | `dark-factory/review-story.prompt.md` | Apply human review feedback to completed stories |
+
+`forge/06-amend.prompt.md` is the agile feedback loop for spec/backlog/design updates when implementation reveals new facts. It does not replace `forge/05-edit.prompt.md`.
 
 > ⚠️ `run-iteration.prompt.md` is **DEPRECATED**. It tried to run all stories in one LLM session,
 > which causes context loss, rule-ignoring, and state confusion. Use the orchestrator playbook or auto-iterate instead.
@@ -306,8 +309,8 @@ When operating in this workspace, Copilot **MUST**:
 2. **Follow the SDLC flow** — Do not skip phases. Frame before Generate. Obstruct before Reconstruct.
 3. **Respect specifications** — All generated code must trace back to a spec in `spec/`. Do not invent requirements.
 4. **Use OpenSpec format** — All specifications must follow the OpenSpec.dev format defined in `.github/instructions/openspec-format.md`.
-5. **API-First** — Before implementing any REST endpoint, the OpenAPI spec must exist and be agreed in `spec/technical/api-contracts.yaml`. Follow `.github/skills/api-first.md` for conventions.
-6. **AWS infrastructure work follows the AWS skills** — For Terraform + Jenkins infrastructure changes, follow `.github/skills/aws-terraform-jenkins-infrastructure.md` for stack boundaries, state handling, env files, parameter stacks, and AWS design rules, and follow `.github/skills/aws-ecs-fargate-runtime-deployments.md` for ECS/Fargate runtime, image delivery, ALB integration, and rollout rules.
+5. **API-First** — Before implementing any REST endpoint, the OpenAPI spec must exist and be agreed in `spec/technical/api-contracts.yaml`. Follow `.github/skills/domains/api-design/api-first.md` for conventions.
+6. **AWS infrastructure work follows the AWS skills** — For Terraform + Jenkins infrastructure changes, follow `.github/skills/domains/aws-platform/aws-terraform-jenkins-infrastructure.md` for stack boundaries, state handling, env files, parameter stacks, and AWS design rules, and follow `.github/skills/domains/aws-platform/aws-ecs-fargate-runtime-deployments.md` for ECS/Fargate runtime, image delivery, ALB integration, and rollout rules.
 7. **Use low-cost models by default** — Default to `GPT-5 Mini` for routine execution work such as backlog grooming, iteration planning, generation, editing, tests, refactors, docs, and implementation. Use a premium model only for high-level analysis tasks such as greenfield framing, brownfield analysis, large architecture trade-off analysis, or when the user explicitly asks for it.
 8. **Agent fidelity** — When acting as an agent, stay in that role. Do not conflate responsibilities.
 9. **Document decisions** — Every significant decision (architectural, product, technical) must be recorded as an ADR or spec entry.
@@ -358,10 +361,20 @@ Set to `main` to revert to trunk-based development.
 Tech stack skills are organized under `.github/skills/stacks/`. Each stack is a self-contained
 directory with patterns, review checklists, and story templates.
 
+Shared reusable capabilities are organized under `.github/skills/domains/`.
+Use domains for cross-stack concerns such as API design, specification authoring,
+testing strategy, documentation, and Architecture as Code.
+
+Machine-readable registration is maintained in `.github/skills/catalog.yaml`.
+
 See `.github/skills/stacks/_registry.md` for:
 - Active stacks and their directories
 - How to add or remove a tech stack
 - File structure conventions
+
+See `.github/skills/domains/_registry.md` for:
+- Active cross-stack domains
+- How to add or remove reusable capability packs
 
 | Stack | Directory | Agent |
 |-------|-----------|-------|
@@ -369,12 +382,8 @@ See `.github/skills/stacks/_registry.md` for:
 | React / TypeScript (Web) | `.github/skills/stacks/react-web/` | `react-frontend-developer` |
 | Expo / React Native (Mobile) | `.github/skills/stacks/expo-react-native/` | `mobile-developer` |
 
-Each stack directory contains an `index.md` with build commands, workflow steps, and pointers
-to the skill files. As skills grow, they are split into focused aspect files (e.g., `patterns-forms.md`,
-`patterns-testing.md`) within the stack directory.
-
-The existing flat skill files (`.github/skills/*.md`) remain as the canonical content source.
-Stack index files reference them. Over time, large files will be decomposed into the stack directory.
+Each stack directory contains direct canonical files (`patterns.md`, `review-checklist.md`, `story-template.md`)
+and optional focused aspect files (for example `patterns-forms.md`, `patterns-testing.md`).
 
 ---
 
@@ -390,36 +399,38 @@ Stack index files reference them. Over time, large files will be decomposed into
 | `spec/README.md` | Spec folder structure guide |
 | `spec/technical/acme-api-design-decisions.md` | **Mandatory** project-specific design decisions for `acme-api` — mapper inheritance, pagination naming, avatar URLs, HTTP status codes, OpenAPI conventions |
 | `.github/skills/stacks/_registry.md` | Tech stack registry — active stacks, how to add/remove |
+| `.github/skills/domains/_registry.md` | Domain registry — reusable cross-stack capabilities |
+| `.github/skills/catalog.yaml` | Machine-readable stack/domain catalog for automation |
 | `.forge/config.env.example` | FORGE configuration reference — author, branching, secrets, rate limits |
 | `.forge/init-worktree.sh` | Worktree initialization script — creates branch, sets author, copies secrets |
 
 ## Skills Available
 
 Skills are available in three formats:
-- **Full reference:** `.github/skills/<name>.md` — detailed patterns, anti-patterns, and examples
-- **Stack index:** `.github/skills/stacks/<stack>/index.md` — stack-specific entry point with build commands and workflow
+- **Canonical references:** stack and domain files under `.github/skills/stacks/` and `.github/skills/domains/`
 - **Copilot CLI discovery:** `.agents/skills/<name>/SKILL.md` — thin wrappers for `/skills reload` and `/skills list`
 
 | Skill | Purpose |
 |-------|---------|
-| `.github/skills/api-first.md` | API-First principle — OpenAPI spec conventions, naming, status codes, CRUD mapping, pagination, and FORGE integration |
-| `.github/skills/spring-boot-webflux.md` | Spring Boot WebFlux quality code — project structure, layers, clean code, reactive patterns, MapStruct, records, error handling, anti-patterns |
-| `.github/skills/java-spring-review-checklist.md` | **Mandatory** Java/Spring pre-commit review checklist — 11-section gate covering API-First, layer separation, MapStruct, testing, build verification, commit rules; MUST pass before every commit |
-| `.github/skills/expo-react-native.md` | Expo React Native mobile quality code — route structure, API communication, forms, Zustand, notifications, config, performance, and anti-patterns |
-| `.github/skills/react-web-frontend.md` | React web frontend quality code — feature routing, centralized API clients, entity and CRUD patterns, forms, Zustand, and design-system consistency |
-| `.github/skills/react-frontend-review-checklist.md` | **Mandatory** React/TypeScript pre-commit review checklist — 11-section gate covering project structure, API isolation, state management, forms, TypeScript strictness, build verification, commit rules; MUST pass before every commit |
-| `.github/skills/react-virtualized-crud-tables.md` | React virtualized CRUD tables — bounded-memory page windows, state-manager contracts, toolbar orchestration, row updates, and large-dataset pitfalls |
-| `.github/skills/aws-terraform-jenkins-infrastructure.md` | AWS infrastructure provisioning — Terraform stack boundaries, Jenkins pipelines, S3 state, env tfvars, Parameter Store, and AWS design guidance |
-| `.github/skills/aws-ecs-fargate-runtime-deployments.md` | AWS runtime and deployment patterns — ECS/Fargate services, task definitions, ALB integration, image publishing, EFS usage, and rollout guidance |
-| `.github/skills/openspec-authoring.md` | Writing OpenSpec specification documents |
-| `.github/skills/code-review.md` | Code review guidelines |
-| `.github/skills/testing.md` | Testing strategy and patterns |
-| `.github/skills/refactoring.md` | Safe refactoring techniques |
-| `.github/skills/documentation.md` | Documentation standards |
+| `.github/skills/domains/api-design/api-first.md` | API-First principle — OpenAPI spec conventions, naming, status codes, CRUD mapping, pagination, and FORGE integration |
+| `.github/skills/stacks/java-spring-webflux/patterns.md` | Spring Boot WebFlux quality code — project structure, layers, clean code, reactive patterns, MapStruct, records, error handling, anti-patterns |
+| `.github/skills/stacks/java-spring-webflux/review-checklist.md` | **Mandatory** Java/Spring pre-commit review checklist — 11-section gate covering API-First, layer separation, MapStruct, testing, build verification, commit rules; MUST pass before every commit |
+| `.github/skills/stacks/expo-react-native/patterns.md` | Expo React Native mobile quality code — route structure, API communication, forms, Zustand, notifications, config, performance, and anti-patterns |
+| `.github/skills/stacks/react-web/patterns.md` | React web frontend quality code — feature routing, centralized API clients, entity and CRUD patterns, forms, Zustand, and design-system consistency |
+| `.github/skills/stacks/react-web/review-checklist.md` | **Mandatory** React/TypeScript pre-commit review checklist — 11-section gate covering project structure, API isolation, state management, forms, TypeScript strictness, build verification, commit rules; MUST pass before every commit |
+| `.github/skills/stacks/react-web/virtualized-tables.md` | React virtualized CRUD tables — bounded-memory page windows, state-manager contracts, toolbar orchestration, row updates, and large-dataset pitfalls |
+| `.github/skills/domains/aws-platform/aws-terraform-jenkins-infrastructure.md` | AWS infrastructure provisioning — Terraform stack boundaries, Jenkins pipelines, S3 state, env tfvars, Parameter Store, and AWS design guidance |
+| `.github/skills/domains/aws-platform/aws-ecs-fargate-runtime-deployments.md` | AWS runtime and deployment patterns — ECS/Fargate services, task definitions, ALB integration, image publishing, EFS usage, and rollout guidance |
+| `.github/skills/domains/documentation-aac-structurizr/architecture-as-code-structurizr.md` | Architecture as Code with Structurizr DSL — workspace modeling, views, conventions, and CI validation |
+| `.github/skills/domains/spec-authoring/openspec-authoring.md` | Writing OpenSpec specification documents |
+| `.github/skills/domains/quality-engineering/code-review.md` | Code review guidelines |
+| `.github/skills/domains/quality-engineering/testing.md` | Testing strategy and patterns |
+| `.github/skills/domains/quality-engineering/refactoring.md` | Safe refactoring techniques |
+| `.github/skills/domains/documentation-aac-structurizr/documentation.md` | Documentation standards |
 
 To apply a skill, reference it at the start of your session:
 ```
-@workspace Read .github/skills/api-first.md and apply it when designing or reviewing APIs.
+@workspace Read .github/skills/domains/api-design/api-first.md and apply it when designing or reviewing APIs.
 ```
 
 ---

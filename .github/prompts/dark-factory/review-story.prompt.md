@@ -46,7 +46,7 @@ Feedback:
 
 1. Read the story spec: `spec/iterations/iteration-N/stories/STORY-ID.md`
 2. Identify the project and tech stack
-3. Read the relevant stack index: `.github/skills/stacks/<stack>/index.md`
+3. Read the relevant stack canonical files: `.github/skills/stacks/<stack>/patterns.md` and `.github/skills/stacks/<stack>/review-checklist.md`
 4. Switch to the worktree directory
 
 ### Step 2: Understand Feedback

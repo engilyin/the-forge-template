@@ -23,11 +23,13 @@ tools:
 2. **Forget previous story** — after committing a story, do NOT reference its code again
 3. **state.json is the single source of truth** — read it before each story to know what's next
 4. **Self-contained specs** — read ONLY the story spec file for implementation rules
-5. **No external rule files** — do NOT read `.github/skills/*.md` or `.github/agents/*.md` during implementation
+5. **No external rule files** — do NOT read `.github/skills/**` or `.github/agents/*.md` during implementation
 6. **Stop on blockers** — if a story fails validation twice, mark it `failed` and move on
 7. **Git Flow branching** — all PRs target `$FORGE_BASE_BRANCH` (default: `develop`), NOT `main`
 8. **Rate limit awareness** — pause `$FORGE_STORY_DELAY_SECONDS` between stories to avoid API throttling
 9. **Init worktree via script** — use `.forge/init-worktree.sh` to create worktrees (handles author + secrets)
+10. **No co-author trailers** — commit messages MUST NOT contain `Co-authored-by:`
+11. **Deterministic PR policy** — obey `FORGE_AUTO_MERGE_PR` consistently for the whole iteration
 
 ## Input
 
@@ -56,8 +58,13 @@ FORGE_AUTHOR_EMAIL="${FORGE_AUTHOR_EMAIL:-$(git config user.email)}"
 FORGE_BASE_BRANCH="${FORGE_BASE_BRANCH:-develop}"
 FORGE_STORY_DELAY_SECONDS="${FORGE_STORY_DELAY_SECONDS:-30}"
 FORGE_SECRET_FILES="${FORGE_SECRET_FILES:-src/main/resources/application-default.properties,src/main/resources/application-local.properties,.env,.env.local,.env.development.local}"
-FORGE_AUTO_MERGE_PR="${FORGE_AUTO_MERGE_PR:-true}"
+FORGE_AUTO_MERGE_PR="${FORGE_AUTO_MERGE_PR:-false}"
 ```
+
+PR policy contract:
+- `FORGE_AUTO_MERGE_PR=false` (recommended): create PRs and perform controlled phase merge-back; do not auto-merge PRs via `gh pr merge`
+- `FORGE_AUTO_MERGE_PR=true`: create PRs and merge them before moving to the next story
+- Do not switch policy mid-iteration
 
 Ensure the base branch exists in each project:
 ```bash
@@ -197,6 +204,10 @@ before starting each story (except the first). This reduces Copilot API throttli
 4. Follow the inline Mandatory Rules in the story spec
 5. Do NOT read any external files beyond the story spec
 
+**No-op guard (required):**
+- If no files were changed for a story, set status to `no_changes`, record reason in `error_summary`, and continue
+- Do not create empty commits
+
 **After implementing — run validation:**
 
 For Java stories:
@@ -229,6 +240,13 @@ npx vitest run 2>&1 | tail -30
 cd solutions/worktrees/$PROJECT/$STORY_ID
 git add .
 git commit -m "feat($STORY_ID): Story title"
+
+# Guardrail: commit message must not contain co-author trailers
+if git log -1 --pretty=%B | grep -qi "^Co-authored-by:"; then
+  echo "ERROR: Co-authored-by trailer detected in commit message"
+  echo "Amend the commit message to remove all co-author trailers before continuing"
+  exit 1
+fi
 ```
 
 Update state.json: status → `done`, record gate results.
@@ -237,36 +255,52 @@ Update state.json: status → `done`, record gate results.
 ```bash
 cd solutions/worktrees/$PROJECT/$STORY_ID
 git push origin feature/$STORY_ID-$SLUG 2>&1
-gh pr create --base $FORGE_BASE_BRANCH \
+PR_URL=$(gh pr create --base $FORGE_BASE_BRANCH \
   --head feature/$STORY_ID-$SLUG \
   --title "feat($STORY_ID): Story title" \
-  --body "Implements $STORY_ID per $ITER spec." 2>&1
+  --body "Implements $STORY_ID per $ITER spec." 2>&1)
 ```
 
 Record `pr_url` in state.json.
 
-### 3d. Phase Complete — Merge to Base Branch
+**Optional auto-merge (only when FORGE_AUTO_MERGE_PR=true):**
+```bash
+if [ "$FORGE_AUTO_MERGE_PR" = "true" ]; then
+  gh pr merge --squash --delete-branch --auto "$PR_URL" 2>&1
 
-After all stories in the phase are done (or failed/blocked):
+  # Verify merged before moving on
+  gh pr view "$PR_URL" --json state,mergedAt --jq '.state + "|" + (.mergedAt // "")' 2>&1
+
+  # Sync base branch for next stories
+  git -C solutions/$PROJECT checkout $FORGE_BASE_BRANCH
+  git -C solutions/$PROJECT pull --ff-only origin $FORGE_BASE_BRANCH
+fi
+```
+
+### 3e. Phase Complete — Merge to Base Branch (Only When FORGE_AUTO_MERGE_PR=false)
+
+After all stories in the phase are done (or failed/blocked), merge to the base branch only if PR auto-merge is disabled:
 
 ```bash
-cd solutions/$PROJECT
-git checkout $FORGE_BASE_BRANCH
+if [ "$FORGE_AUTO_MERGE_PR" = "false" ]; then
+  cd solutions/$PROJECT
+  git checkout $FORGE_BASE_BRANCH
 
-# Merge each done story
-for each DONE story in this phase:
-  git merge feature/$STORY_ID-$SLUG --no-edit 2>&1
-done
+  # Merge each done story
+  for each DONE story in this phase:
+    git merge feature/$STORY_ID-$SLUG --no-edit 2>&1
+  done
 
-# Verify base branch builds
-./gradlew clean build 2>&1 | tail -30  # or: npm run build
+  # Verify base branch builds
+  ./gradlew clean build 2>&1 | tail -30  # or: npm run build
+fi
 ```
 
 If merge conflicts occur: attempt auto-resolution. If that fails, record the conflict in state.json and continue with remaining phases (dependent stories will be blocked).
 
 Update state.json: `current_phase` → next phase, add `phase_transitions` entry.
 
-### 3e. Repeat for Next Phase
+### 3f. Repeat for Next Phase
 
 Go back to 3a for the next phase.
 
@@ -290,6 +324,7 @@ Print a summary:
   Stories:  [done]/[total] completed
   Points:   [delivered]/[planned] delivered
   PRs:      [count] created (targeting [FORGE_BASE_BRANCH])
+  PR Policy:[FORGE_AUTO_MERGE_PR]
 
   ✅ Done:    [list]
   ❌ Failed:  [list with error summaries]
@@ -301,6 +336,7 @@ Print a summary:
   - Review PRs on [FORGE_BASE_BRANCH]: [PR URLs]
   - Apply review feedback: review-story.prompt.md
   - Fix failed stories manually or schedule for next iteration
+  - Run: forge/05-edit.prompt.md (mandatory quality hardening gate)
   - Run: assess-iteration.prompt.md for detailed assessment
   - When ready to release: merge [FORGE_BASE_BRANCH] → main
 ═══════════════════════════════════════════════════════

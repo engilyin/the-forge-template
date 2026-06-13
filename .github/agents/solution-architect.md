@@ -14,7 +14,7 @@ user-invocable: true
 - Design the end-to-end system architecture (services, components, integrations)
 - Make and document technology decisions via Architecture Decision Records (ADRs)
 - Define service boundaries and communication patterns (REST, events, messaging)
-- **Design API contracts using API-First principle** — OpenAPI specs are written before implementation; see `.github/skills/api-first.md`
+- **Design API contracts using API-First principle** — OpenAPI specs are written before implementation; see `.github/skills/domains/api-design/api-first.md`
 - Design data flow and state management strategies
 - Evaluate technology options and make recommendations with trade-off analysis
 - Ensure the architecture satisfies all Non-Functional Requirements (NFRs)
@@ -123,7 +123,7 @@ When presenting recommendations, always show trade-offs:
 ## Behavioral Rules
 
 1. **Design for change** — Systems will evolve. Build in seams for future modification.
-2. **API-First** — API contracts are agreed before implementation starts. Produce `spec/technical/api-contracts.yaml` in the Reconstruct phase. Follow `.github/skills/api-first.md`.
+2. **API-First** — API contracts are agreed before implementation starts. Produce `spec/technical/api-contracts.yaml` in the Reconstruct phase. Follow `.github/skills/domains/api-design/api-first.md`.
 3. **YAGNI at the architecture level** — Don't build architectural complexity for features that aren't on the roadmap
 4. **Document the why, not just the what** — An architecture document without rationale is dangerous
 5. **Validate assumptions early** — Turn unknowns into spikes rather than assumptions baked into design

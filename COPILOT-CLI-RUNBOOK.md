@@ -18,14 +18,18 @@ EXISTING CODE:  brownfield-analysis ──────────────�
                                    preprocess-iteration
                             (inlines code skeletons + rules per story)
                                                    ↓
-              ┌────────────────────────────────────┴────────────────────────────────────┐
-              │  Level 4 (human-orchestrated)       │  Level 5 (automated, walk away)   │
-              │  orchestrator-playbook.md            │  auto-iterate.prompt.md           │
-              └────────────────────────────────────┴────────────────────────────────────┘
+                ┌────────────────────────────────────┴────────────────────────────────────┐
+                │  Level 4 (human-orchestrated)       │  Level 5 (automated, walk away)   │
+                │  orchestrator-playbook.md            │  auto-iterate.prompt.md           │
+                └────────────────────────────────────┴────────────────────────────────────┘
                                                    ↓
-                                  Phase 0 → commit → merge develop
-                                  Phase 1 stories  → merge develop
-                                  Phase N stories  → merge develop
+                             GENERATE (implementation only)
+                             Phase 0 → commit → merge develop
+                             Phase 1 stories  → commit/PR/merge policy
+                             Phase N stories  → commit/PR/merge policy
+                                        ↓
+                             EDIT (mandatory hardening gate)
+                        .github/prompts/forge/05-edit.prompt.md
                                                    ↓
                                          assess-iteration
                                        Go ↓           No-Go ↓
@@ -33,7 +37,7 @@ EXISTING CODE:  brownfield-analysis ──────────────�
                                        (human)
 
   MID-ITERATION:
-    Spec/design change → 06-amend.prompt.md  (update specs, absorb or halt iteration)
+    Spec/design change → 06-amend.prompt.md  (spec/backlog updates only)
     Story blocked      → edit state.json, continue with remaining stories
     Major pivot        → assess → close early → replan next iteration
 ```
@@ -178,70 +182,68 @@ Read @.github/prompts/dark-factory/auto-iterate.prompt.md and execute iteration 
 - Auto-validates, commits, pushes, creates PRs after each story
 - Skips failed stories after 2 retries; continues the rest
 - Phase merge-back handled automatically
+- Uses a deterministic PR policy from `.forge/config.env`:
+  - `FORGE_AUTO_MERGE_PR=false` (recommended): create PRs, do not auto-merge
+  - `FORGE_AUTO_MERGE_PR=true`: create and merge PRs before moving forward
 
 Track progress: `cat spec/iterations/iteration-N/state.json`
 
----
+## 8. Post-Level-5 Single Flow (Required)
 
-## 7a. Review Feedback (After Iteration)
+After `auto-iterate.prompt.md` completes, follow this exact sequence.
+There are no alternate paths.
 
-After reviewing AI-generated code, apply corrections:
+### Step 1 — Run FORGE Edit (mandatory)
 
 ```text
-Read @.github/prompts/dark-factory/review-story.prompt.md
-Review US-XX-XX in solutions/worktrees/PROJECT/US-XX-XX/
-Feedback:
-- [your correction notes]
+Read @.github/prompts/forge/05-edit.prompt.md and run it for iteration N.
 ```
 
-When satisfied, merge `develop` → `main` to release.
+Expected output:
+- `spec/iterations/iteration-N/report.md`
+- Defects/regressions list
+- Acceptance criteria coverage
+- Clear release recommendation
 
----
+### Step 2 — Triage outcomes from Edit report
 
-## 8. Mid-Iteration: Handle Changes
+Use the report to decide what happens next:
 
-### Spec or design changed
-```text
-Read @.github/prompts/forge/06-amend.prompt.md and apply the following change: [describe]
-```
-Updates affected specs, backlog, and active iteration (continue / absorb / halt).
+1. Problems, regressions, or missing quality items:
+  - fix them
+  - re-run `05-edit.prompt.md`
+2. Story scope not fully implemented:
+  - mark unfinished story parts as carry-over
+  - move them to next iteration backlog
+3. Goals changed or new goals discovered:
+  - run `06-amend.prompt.md` to update specs/backlog
+  - include in future iteration planning
 
-### Story is blocked
-Edit `spec/iterations/iteration-N/state.json`:
-```json
-"US-XX-XX": { "status": "blocked", "error_summary": "reason" }
-```
-Continue remaining stories. Carry blocked story to next iteration.
+Note:
+- `05-edit` is quality and completion validation
+- `06-amend` is scope/spec/backlog evolution
 
-### Drop iteration and replan
-```text
-// Step 1 — assess what completed
-Read @.github/prompts/dark-factory/assess-iteration.prompt.md
-
-// Step 2 — re-groom with new requirements
-Read @.github/prompts/backlog/backlog-grooming.prompt.md and re-groom including: [new requirements]
-
-// Step 3 — plan fresh iteration
-Read @.github/prompts/backlog/iteration-planning.prompt.md and plan iteration N+1.
-```
-
----
-
-## 9. Close an Iteration
+### Step 3 — Run iteration assessment (Go/No-Go)
 
 ```text
 Read @.github/prompts/dark-factory/assess-iteration.prompt.md
 and assess iteration N using @spec/iterations/iteration-N/state.json
 ```
 
-- Merge approved PRs to `develop`
-- When ready to release: merge `develop` → `main` manually
-- Carry failed/blocked stories to next iteration backlog
-- Run `06-amend.prompt.md` if implementation revealed spec gaps
+### Step 4 — Close or continue
+
+- If **Go**: merge approved PRs to `develop`, then merge `develop` → `main` manually
+- If **No-Go**: keep fixes/carry-overs in backlog, plan next iteration, then continue
+
+### Non-Negotiable Guardrails
+
+- No `Co-authored-by` trailers in commits
+- No release from `feature/*` branches (release is `develop` → `main` only)
+- No skipping `05-edit`, even if build/tests are green
 
 ---
 
-## 10. CLI Quick Reference
+## 9. CLI Quick Reference
 
 ```bash
 copilot                                               # interactive
