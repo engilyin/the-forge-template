@@ -10,7 +10,6 @@ This folder is intentionally focused on stack-specific workflows. Shared, cross-
 ## Contract
 
 Each stack directory must contain these files:
-- index.md
 - patterns.md
 - review-checklist.md
 - story-template.md
