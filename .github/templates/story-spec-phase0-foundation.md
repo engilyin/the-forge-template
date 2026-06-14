@@ -85,7 +85,7 @@ Verify generated interfaces compile:
 
 ## Mandatory Rules (Inline)
 
-1. This story MUST be merged to `main` before ANY feature branch is created
+1. This story MUST be merged to `$FORGE_BASE_BRANCH` (default: `develop`) before ANY feature branch is created
 2. NO business logic in this story — entities, schema, and stubs only
 3. Do NOT implement controllers or services — that comes in feature stories
 4. Flyway migration naming: `V{version}__description.sql`
