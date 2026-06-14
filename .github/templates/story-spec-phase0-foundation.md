@@ -15,7 +15,7 @@ status: draft
 ## Story
 
 **As a** development team,
-**I want** shared entity changes, OpenAPI spec updates, and generated code committed to `main`,
+**I want** shared entity changes, OpenAPI spec updates, and generated code committed to `$FORGE_BASE_BRANCH` (default: `develop`),
 **So that** all feature branches in this iteration start from a consistent, compile-clean baseline.
 
 ## Context
