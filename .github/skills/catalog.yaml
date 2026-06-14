@@ -35,7 +35,6 @@ domains:
   - id: documentation-aac-structurizr
     path: .github/skills/domains/documentation-aac-structurizr/documentation.md
     files:
-      - .github/skills/domains/documentation-aac-structurizr/documentation.md
       - .github/skills/domains/documentation-aac-structurizr/architecture-as-code-structurizr.md
   - id: aws-platform
     path: .github/skills/domains/aws-platform/aws-terraform-jenkins-infrastructure.md
