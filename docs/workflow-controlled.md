@@ -83,6 +83,12 @@ code .
 
 Review diffs in the VS Code Source Control panel. Run tests from the IDE. Return to CLI when ready to continue.
 
+Before closing an iteration, run the mandatory Edit gate:
+
+```text
+Read @.github/prompts/forge/05-edit.prompt.md and run it for the current iteration.
+```
+
 ---
 
 ## Common controlled scenarios

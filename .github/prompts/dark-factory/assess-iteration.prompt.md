@@ -15,6 +15,13 @@ You are acting as a **Tech Lead** supported by a **QA Engineer** and **Scrum Mas
 5. Clear Go/No-Go recommendation
 6. User decision handling
 
+## Prerequisite
+
+Before running this prompt, FORGE Phase 5 (Edit) should already be executed for the same iteration:
+- `.github/prompts/forge/05-edit.prompt.md`
+
+If the Edit report is missing, assess with `NO-GO` and instruct the user to run 05-edit first.
+
 ## Step 1: Load Iteration Context
 
 Find the current iteration:
@@ -26,8 +33,14 @@ echo "Assessing: $CURRENT_ITER"
 Read:
 - `spec/iterations/$CURRENT_ITER/plan.md` — iteration goal, selected stories
 - `spec/iterations/$CURRENT_ITER/status.md` — execution results
+- `spec/iterations/$CURRENT_ITER/report.md` — Edit phase quality report (if present)
 - `spec/iterations/$CURRENT_ITER/stories/*.md` — each story spec (for AC validation)
 - `spec/validation/acceptance-criteria.md` — project-level acceptance criteria
+
+If `spec/iterations/$CURRENT_ITER/report.md` does not exist:
+- Mark overall status as `RED`
+- Set recommendation to `NO-GO`
+- State: "05-edit was not executed; quality hardening evidence is missing"
 
 ## Step 2: Tally Story Results
 
@@ -178,6 +191,7 @@ go_no_go: GO | NO-GO | CONDITIONAL-GO
 | Build | | | |
 | Security Scan | | | |
 | Terraform Validate | | | |
+| Edit Phase (05-edit) | | | Required for release recommendation |
 
 ---
 
@@ -324,6 +338,11 @@ Ask: "Shall I also trigger the deployment pipeline?"
 1. Document iteration as "closed" with results as-is
 2. Carry forward incomplete stories
 3. Run: `.github/prompts/backlog/iteration-planning.prompt.md`
+
+### If decision is "Run Edit First" (new):
+1. Run `.github/prompts/forge/05-edit.prompt.md` for the same iteration
+2. Update `spec/iterations/[N]/report.md`
+3. Re-run this assessment prompt
 
 ## Important Rules
 - **Be honest** — An amber or red assessment is more valuable than a false green

@@ -32,9 +32,9 @@ Read:
 2. All story specs in `spec/iterations/[current-iteration]/stories/`
 3. The agent definition for each story's assigned agent (from `.github/agents/`)
 4. The relevant sections of:
-   - `spec/technical/api-contracts.md` (only for the story's endpoint)
-   - `spec/technical/g2sentry-portal-api-design-decisions.md` (only relevant DDs)
-   - `.github/skills/java-spring-review-checklist.md` or `.github/skills/react-frontend-review-checklist.md`
+   - `spec/technical/api-contracts.yaml` (only for the story's endpoint)
+   - `spec/technical/<project>-design-decisions.md` (only relevant DDs)
+   - `.github/skills/stacks/java-spring-webflux/review-checklist.md` or `.github/skills/stacks/react-web/review-checklist.md`
 
 ## Process
 

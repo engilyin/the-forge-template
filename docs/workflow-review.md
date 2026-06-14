@@ -17,6 +17,7 @@
 
 ```
 Fleet finishes → /tasks shows completion
+  → Run forge/05-edit.prompt.md
   → Open VS Code (code .)
     → Review diffs + run tests
       → Approve OR leave feedback
@@ -48,8 +49,8 @@ Check `spec/` for new or modified files:
 For each project with changes:
 
 ```bash
-git -C solutions/acme-api diff main..feature/US-01-01
-git -C solutions/acme-api log --oneline main..feature/US-01-01
+git -C solutions/acme-api diff $FORGE_BASE_BRANCH..feature/US-01-01
+git -C solutions/acme-api log --oneline $FORGE_BASE_BRANCH..feature/US-01-01
 ```
 
 Or use the VS Code Source Control panel — it shows diffs per repo.
@@ -132,7 +133,7 @@ After review is complete:
 git -C solutions/acme-api push origin feature/US-01-01
 
 # open a PR (requires gh CLI)
-gh pr create --repo your-org/acme-api --base main --head feature/US-01-01 \
+gh pr create --repo your-org/acme-api --base $FORGE_BASE_BRANCH --head feature/US-01-01 \
   --title "feat(US-01-01): user authentication" \
   --body "Implements STORY-001. See spec/iterations/iteration-1/stories/STORY-001.md"
 ```
@@ -142,8 +143,7 @@ For spec changes in the root repo:
 ```bash
 git add spec/
 git commit -m "docs: iteration-1 specs and reports"
-git push origin main
-```
+git push origin HEAD
 
 ---
 

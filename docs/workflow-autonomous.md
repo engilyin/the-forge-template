@@ -66,6 +66,14 @@ Keep VS Code open on the side — watch for file changes, run tests manually if 
 
 ### 5. Assess the iteration
 
+Before assessment, run the mandatory Edit gate:
+
+```text
+Read @.github/prompts/forge/05-edit.prompt.md and run it for the current iteration.
+```
+
+Then assess:
+
 ```text
 Read @.github/prompts/dark-factory/assess-iteration.prompt.md and assess the completed iteration.
 ```

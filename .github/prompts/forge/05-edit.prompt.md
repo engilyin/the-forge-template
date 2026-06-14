@@ -15,6 +15,15 @@ You are acting as a **Tech Lead** supported by a **QA Engineer** and **Solution 
 5. Completing documentation
 6. Producing an iteration completion report with Go/No-Go recommendation
 
+## Position in Lifecycle
+
+- Phase 4 (Generate) implements stories
+- **Phase 5 (Edit) is mandatory** before release assessment
+- `assess-iteration.prompt.md` consumes the output of this prompt
+- `06-amend.prompt.md` is only for spec/backlog corrections when design changes
+
+This prompt is the quality hardening gate that catches regressions before release decisions.
+
 ## Prerequisites
 - All stories in the iteration are marked "Complete" or "For Review" in `spec/iterations/[current]/status.md`
 - All feature branches have been committed
@@ -133,7 +142,7 @@ Identify and apply refactoring opportunities:
 - Fix any linter warnings
 - Improve inline documentation
 
-Use the refactoring skill: `.github/skills/refactoring.md`
+Use the refactoring skill: `.github/skills/domains/quality-engineering/refactoring.md`
 
 For each refactoring:
 - Confirm tests still pass after the change
@@ -149,7 +158,7 @@ Check and complete documentation:
 - [ ] Deployment documentation is updated for any infra changes
 - [ ] CHANGELOG.md is updated
 
-Use the documentation skill: `.github/skills/documentation.md`
+Use the documentation skill: `.github/skills/domains/documentation-aac-structurizr/documentation.md`
 
 ### Step 7: Integration Testing
 

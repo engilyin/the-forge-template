@@ -9,13 +9,13 @@ description: >-
 
 # React Frontend Review Checklist
 
-This skill wraps the full checklist at `.github/skills/react-frontend-review-checklist.md`.
+This skill wraps the full checklist at `.github/skills/stacks/react-web/review-checklist.md`.
 
 ## When to invoke
 
 Run this checklist **after** implementing a React frontend story and **before** committing:
 
-1. Implement the story following `.github/skills/react-web-frontend.md`
+1. Implement the story following `.github/skills/stacks/react-web/patterns.md`
 2. **Invoke this checklist** — validate every section; fix all ❌ findings
 3. `npx prettier --write src/`
 4. `npx eslint src/`
@@ -38,4 +38,4 @@ Run this checklist **after** implementing a React frontend story and **before** 
 10. Build Verification
 11. Commit & PR
 
-Read the full checklist: `.github/skills/react-frontend-review-checklist.md`
+Read the full checklist: `.github/skills/stacks/react-web/review-checklist.md`

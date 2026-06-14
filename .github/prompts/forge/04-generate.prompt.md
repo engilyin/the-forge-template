@@ -129,8 +129,8 @@ solutions/<web-project>/
 
 **Code Standards:**
 - All components as function components with TypeScript
-- Follow `.github/skills/react-web-frontend.md` as the primary quality reference
-- For huge virtualized CRUD tables, also follow `.github/skills/react-virtualized-crud-tables.md`
+- Follow `.github/skills/stacks/react-web/patterns.md` as the primary quality reference
+- For huge virtualized CRUD tables, also follow `.github/skills/stacks/react-web/virtualized-tables.md`
 - Custom hooks for all non-trivial logic
 - TanStack Query for standard server state; use bounded-memory custom fetch strategies for huge virtualized CRUD lists when appropriate
 - Zustand for durable client state only
@@ -170,7 +170,7 @@ solutions/<mobile-project>/
 - Use Expo managed workflow unless bare workflow is explicitly required
 - TypeScript strict mode
 - Expo Router for navigation (file-based)
-- Follow `.github/skills/expo-react-native.md` as the primary quality reference
+- Follow `.github/skills/stacks/expo-react-native/patterns.md` as the primary quality reference
 - Handle both Android and iOS platform differences explicitly
 - Use `Platform.OS` or platform-specific files for platform behavior
 - Centralize API communication in `services/` with shared clients/interceptors
@@ -206,8 +206,8 @@ solutions/<iac-project>/
 ```
 
 **Code Standards:**
-- Follow `.github/skills/aws-terraform-jenkins-infrastructure.md` for Terraform stack design and provisioning
-- Follow `.github/skills/aws-ecs-fargate-runtime-deployments.md` for ECS/Fargate runtime, image publishing, ALB integration, and deployment behavior
+- Follow `.github/skills/domains/aws-platform/aws-terraform-jenkins-infrastructure.md` for Terraform stack design and provisioning
+- Follow `.github/skills/domains/aws-platform/aws-ecs-fargate-runtime-deployments.md` for ECS/Fargate runtime, image publishing, ALB integration, and deployment behavior
 - All Terraform resources must have tags (Environment, Project, ManagedBy=terraform)
 - Use unique remote state keys per stack and explicit env tfvars where appropriate
 - Never hardcode credentials or real secrets in repo-managed Terraform values

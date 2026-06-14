@@ -19,7 +19,7 @@ This skill is based on a proven pattern used in a real CRUD-heavy admin applicat
 - shadcn/ui and Radix primitives over a shared design system
 - reusable CRUD form and virtual table primitives
 
-For very large bounded-memory tables, use this skill together with `.github/skills/react-virtualized-crud-tables.md`.
+For very large bounded-memory tables, use this skill together with `.github/skills/stacks/react-web/virtualized-tables.md`.
 
 ---
 
@@ -56,7 +56,7 @@ Do not mix competing architectural styles in one app. Follow the existing projec
 - `src/validation/` owns reusable validation logic
 Pages and route files should stay thin. Business flow belongs in hooks and services.
 
-The table layer may fetch pages, virtualize rows, and prune pages outside a buffer window. That is preferable to caching every loaded page forever. For the full table architecture, read `.github/skills/react-virtualized-crud-tables.md`.
+The table layer may fetch pages, virtualize rows, and prune pages outside a buffer window. That is preferable to caching every loaded page forever. For the full table architecture, read `.github/skills/stacks/react-web/virtualized-tables.md`.
 ---
 
 ### Feature module structure and code organization
@@ -129,7 +129,7 @@ Never put route logic in `components/entities/`. Never put reusable display atom
 
 Every entity list screen MUST use the `DataTable` from `components/parts/` with the VIS `StateManager` pattern. **Never implement a paginated list (Previous/Next buttons).** The user never sees page numbers — records load seamlessly as they scroll.
 
-See `.github/skills/react-virtualized-crud-tables.md` for the complete pattern, full code skeletons, and checklist.
+See `.github/skills/stacks/react-web/virtualized-tables.md` for the complete pattern, full code skeletons, and checklist.
 
 Use shared primitives for recurring CRUD workflows instead of rebuilding list, toolbar, and form mechanics for each entity.
 
@@ -311,7 +311,7 @@ Good fit for custom table fetchers:
 - aggressive page pruning requirements
 - table-owned page windows and state-manager orchestration
 
-Read `.github/skills/react-virtualized-crud-tables.md` for the full architecture, state-manager contract, large-dataset pitfalls, and row-update patterns.
+Read `.github/skills/stacks/react-web/virtualized-tables.md` for the full architecture, state-manager contract, large-dataset pitfalls, and row-update patterns.
 
 ---
 
@@ -731,7 +731,7 @@ function CustomerFields({ control, editable, setValue }: TypedFieldsProps<Custom
 }
 ```
 
-Read `.github/skills/react-virtualized-crud-tables.md` for the full virtual table samples, including store wiring, toolbar communication, and row-action orchestration.
+Read `.github/skills/stacks/react-web/virtualized-tables.md` for the full virtual table samples, including store wiring, toolbar communication, and row-action orchestration.
 
 ---
 
@@ -1076,4 +1076,4 @@ new QueryClient({
 
 ### Pre-Commit Quality Gate
 
-Every React story must pass the **React Frontend Review Checklist** (`.github/skills/react-frontend-review-checklist.md`) before committing. This is a mandatory 11-section gate — the frontend equivalent of the Java Spring Review Checklist.
+Every React story must pass the **React Frontend Review Checklist** (`.github/skills/stacks/react-web/review-checklist.md`) before committing. This is a mandatory 11-section gate — the frontend equivalent of the Java Spring Review Checklist.

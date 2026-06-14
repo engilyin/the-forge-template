@@ -15,12 +15,12 @@ status: draft
 ## Story
 
 **As a** development team,
-**I want** shared entity changes, OpenAPI spec updates, and generated code committed to `main`,
+**I want** shared entity changes, OpenAPI spec updates, and generated code committed to `$FORGE_BASE_BRANCH` (default: `develop`),
 **So that** all feature branches in this iteration start from a consistent, compile-clean baseline.
 
 ## Context
 
-Phase 0 stories run FIRST and merge to `main` BEFORE any feature branch is created.
+Phase 0 stories run FIRST and merge to `$FORGE_BASE_BRANCH` (default: `develop`) BEFORE any feature branch is created.
 This prevents merge conflicts caused by multiple stories touching the same entity or schema.
 
 ## Scope — What Goes Here
@@ -85,7 +85,7 @@ Verify generated interfaces compile:
 
 ## Mandatory Rules (Inline)
 
-1. This story MUST be merged to `main` before ANY feature branch is created
+1. This story MUST be merged to `$FORGE_BASE_BRANCH` (default: `develop`) before ANY feature branch is created
 2. NO business logic in this story — entities, schema, and stubs only
 3. Do NOT implement controllers or services — that comes in feature stories
 4. Flyway migration naming: `V{version}__description.sql`
@@ -113,5 +113,5 @@ git commit -m "chore(US-XX-00): Phase 0 foundation for iteration N"
 - [ ] OpenAPI spec updated for all new endpoints
 - [ ] `./gradlew openApiGenerate` run successfully
 - [ ] `./gradlew clean build` green
-- [ ] Merged to `main`
+- [ ] Merged to `$FORGE_BASE_BRANCH` (default: `develop`)
 - [ ] All feature branches created AFTER this merge

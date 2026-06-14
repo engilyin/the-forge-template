@@ -34,16 +34,22 @@ Read that file. It contains everything you need.
 7. **Fix any failures** — retry validation up to 2 times
 8. **Commit** using the exact commit command in the story spec
 
+After commit, verify trailer policy:
+```bash
+git log -1 --pretty=%B | grep -qi "^Co-authored-by:" && echo "FAIL: remove co-author trailer" && exit 1
+```
+
 ## Critical Rules
 
 - **Read ONLY the story spec file** — all rules, patterns, and conventions are inlined there
-- **Do NOT read or reference** `.github/skills/*.md`, `.github/agents/*.md`, or `spec/technical/*.md`
+- **Do NOT read or reference** `.github/skills/**`, `.github/agents/*.md`, or `spec/technical/*.md`
   unless the story spec explicitly quotes content from them inline
 - **Do NOT modify files** outside the story's "Files to Create" and "Files to Modify" tables
 - **Do NOT add features** beyond the explicit Acceptance Criteria
 - **Do NOT add** comments, docstrings, or error handling beyond what the skeleton specifies
 - **If ambiguous**, implement the simplest reasonable interpretation — do not invent requirements
 - **Commit message format:** `feat(STORY-ID): title` — no Co-authored-by trailer
+- **No empty output:** if no files changed, report `NEEDS_REVIEW` with reason; do not create an empty commit
 - **PR target:** `$FORGE_BASE_BRANCH` (default: `develop`), NOT `main`
 - **Rate limits:** If you encounter HTTP 429 errors, wait 60 seconds and retry the operation
 

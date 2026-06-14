@@ -8,7 +8,7 @@ user-invocable: false
 
 Use this skill for AWS runtime and deployment work after the base infrastructure already exists. Apply it when the task is about ECS/Fargate services, task definitions, ALB integration, service discovery, image publishing, Jenkins runtime agents, or rollout safety.
 
-Use `.github/skills/aws-terraform-jenkins-infrastructure.md` for stack boundaries and provisioning design.
+Use `.github/skills/domains/aws-platform/aws-terraform-jenkins-infrastructure.md` for stack boundaries and provisioning design.
 Use this skill for what runs on top of those stacks.
 
 ---

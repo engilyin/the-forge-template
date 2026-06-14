@@ -10,7 +10,7 @@ user-invocable: true
 > Validate each item against the changes made. Fix every ❌ before proceeding.
 >
 > **Mandatory build sequence (in order):**
-> 1. Implement the story following `.github/skills/react-web-frontend.md`
+> 1. Implement the story following `.github/skills/stacks/react-web/patterns.md`
 > 2. All items on this checklist pass
 > 3. `npx prettier --write src/` — auto-format code
 > 4. `npx eslint src/` — must pass with zero errors

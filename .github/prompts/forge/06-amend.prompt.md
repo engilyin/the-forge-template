@@ -12,6 +12,11 @@ tools:
 > Run this prompt when you discover during implementation that specifications need updating.
 > This is the **agile feedback loop** — FORGE is not waterfall.
 
+Important scope boundary:
+- This phase updates specs/backlog/iteration plans after learning
+- This phase does NOT replace Phase 5 (Edit) quality hardening
+- Use Phase 5 for regressions/bugs/quality gate fixes; use Phase 6 for requirement/design corrections
+
 ## When to Use
 
 - A design decision turned out to be wrong
