@@ -133,7 +133,7 @@ After review is complete:
 git -C solutions/acme-api push origin feature/US-01-01
 
 # open a PR (requires gh CLI)
-gh pr create --repo your-org/acme-api --base main --head feature/US-01-01 \
+gh pr create --repo your-org/acme-api --base $FORGE_BASE_BRANCH --head feature/US-01-01 \
   --title "feat(US-01-01): user authentication" \
   --body "Implements STORY-001. See spec/iterations/iteration-1/stories/STORY-001.md"
 ```
