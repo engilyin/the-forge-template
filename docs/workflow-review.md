@@ -49,8 +49,8 @@ Check `spec/` for new or modified files:
 For each project with changes:
 
 ```bash
-git -C solutions/acme-api diff main..feature/US-01-01
-git -C solutions/acme-api log --oneline main..feature/US-01-01
+git -C solutions/acme-api diff $FORGE_BASE_BRANCH..feature/US-01-01
+git -C solutions/acme-api log --oneline $FORGE_BASE_BRANCH..feature/US-01-01
 ```
 
 Or use the VS Code Source Control panel — it shows diffs per repo.
