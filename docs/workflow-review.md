@@ -143,8 +143,7 @@ For spec changes in the root repo:
 ```bash
 git add spec/
 git commit -m "docs: iteration-1 specs and reports"
-git push origin main
-```
+git push origin HEAD
 
 ---
 
