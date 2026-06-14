@@ -113,5 +113,5 @@ git commit -m "chore(US-XX-00): Phase 0 foundation for iteration N"
 - [ ] OpenAPI spec updated for all new endpoints
 - [ ] `./gradlew openApiGenerate` run successfully
 - [ ] `./gradlew clean build` green
-- [ ] Merged to `main`
+- [ ] Merged to `$FORGE_BASE_BRANCH` (default: `develop`)
 - [ ] All feature branches created AFTER this merge
