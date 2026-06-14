@@ -20,7 +20,7 @@ status: draft
 
 ## Context
 
-Phase 0 stories run FIRST and merge to `main` BEFORE any feature branch is created.
+Phase 0 stories run FIRST and merge to `$FORGE_BASE_BRANCH` (default: `develop`) BEFORE any feature branch is created.
 This prevents merge conflicts caused by multiple stories touching the same entity or schema.
 
 ## Scope — What Goes Here
